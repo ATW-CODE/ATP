@@ -72,6 +72,7 @@ Database-backed user storage
 CORS-enabled API for kiosk / web clients
 
 📁 Project Structure
+```
 ATP/
 ├── backend/
 │   ├── src/
@@ -99,6 +100,7 @@ ATP/
 │   └── .gitignore
 │
 └── README.md
+```
 
 🔐 Authentication Flow (Implemented)
 
@@ -127,6 +129,7 @@ Payment verification
 Kiosk access validation
 
 ⚙️ Environment Setup
+
 Backend (backend/.env)
 PORT=5000
 GOOGLE_CLIENT_ID=your_google_client_id
