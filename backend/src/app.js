@@ -2,6 +2,8 @@ import cors from "cors";
 import express from "express";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";   
+import printRoutes from "./routes/print.routes.js";
+import fileRoutes from "./routes/file.routes.js";
 
 const app = express();
 
@@ -19,8 +21,10 @@ app.use(
 
 app.use(express.json());
 
+app.use("/print", printRoutes);
 app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
+app.use("/files", fileRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "OK", service: "ATP Backend" });

@@ -1,38 +1,30 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
 import { logout } from "../utils/auth";
+import PrintJobs from "../components/PrintJobs";
+import CreatePrintJob from "../components/CreatePrintJob";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     apiFetch("http://localhost:5000/users/me")
       .then((res) => res.json())
-      .then((data) => setUser(data))
-      .catch((err) => console.error(err));
+      .then((data) => setUser(data));
   }, []);
 
-  if (!user) return <p>Loading user</p>
+  if (!user) return <p>Loading...</p>;
 
   return (
     <div style={{ padding: "40px" }}>
-     <h2>Welcome, {user.name}</h2>
+      <h2>Welcome, {user.name}</h2>
       <p>Email: {user.email}</p>
-      <p>Role: {user.role}</p>
 
-      <button 
-        onClick={logout}
-        style={{
-          marginTop: "20px",
-          padding: "8px 16px",
-          backgroundColor: "#ff4d4f",
-          cursor: "pointer",
-          border: "none",
-          borderRadius: "4px",
-          color: "Black",
-        }}>
-          logout
-        </button>
+      <button onClick={logout}>Logout</button>
+
+      <CreatePrintJob onJobCreated={() => setRefreshKey((k) => k + 1)} />
+      <PrintJobs key={refreshKey} />
     </div>
   );
 }
