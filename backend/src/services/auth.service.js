@@ -1,6 +1,3 @@
-
-const LEARNING_MODE = process.env.LEARNING_MODE === "true";
-console.log("LEARNING_MODE =", process.env.LEARNING_MODE);
 import { OAuth2Client } from "google-auth-library";
 import jwt from "jsonwebtoken";
 import pool from "../db/index.js";
@@ -8,45 +5,24 @@ import pool from "../db/index.js";
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const handleGoogleAuth = async (idToken) => {
-  // // 1️⃣ Verify Google ID token
-  // const ticket = await client.verifyIdToken({
-  //   idToken,
-  //   audience: process.env.GOOGLE_CLIENT_ID,
-  // });
-
-  // const payload = ticket.getPayload();
-
-  // // 🔍 LEARNING LOG — Google Token Payload
-  // console.log("\n===== GOOGLE TOKEN PAYLOAD =====");
-  // console.log(payload);
-  // console.log("================================\n");
-
-  // const { sub: googleId, email, name } = payload;
-
-  let payload;
-
-if (LEARNING_MODE) {
-  // 🧪 FAKE GOOGLE PAYLOAD (LEARNING ONLY)
-  payload = {
-    sub: "google_fake_123456",
-    email: "testuser@gmail.com",
-    name: "Test User",
-  };
-
-  console.log("\n===== FAKE GOOGLE PAYLOAD (LEARNING MODE) =====");
-  console.log(payload);
-  console.log("==============================================\n");
-} else {
-  // ✅ REAL GOOGLE VERIFICATION (PRODUCTION)
+  // 1️⃣ Verify Google ID token
   const ticket = await client.verifyIdToken({
     idToken,
     audience: process.env.GOOGLE_CLIENT_ID,
   });
 
-  payload = ticket.getPayload();
-}
+  const payload = ticket.getPayload();
 
-const { sub: googleId, email, name } = payload;
+  const { 
+    sub: googleId,
+    email,
+    name,
+    email_verified
+  } = payload;
+  
+  if (!email_verified) {
+  throw new Error("Google email not verified");
+  }
 
 
   // 2️⃣ Check if user exists
@@ -97,14 +73,6 @@ const { sub: googleId, email, name } = payload;
     }
   );
 
-  // 🔍 LEARNING LOG — ATP JWT
-  console.log("\n===== ATP JWT (RAW) =====");
-  console.log(token);
-
-  const decodedJwt = jwt.decode(token);
-  console.log("\n===== ATP JWT PAYLOAD =====");
-  console.log(decodedJwt);
-  console.log("===========================\n");
 
   return {
     token,

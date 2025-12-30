@@ -1,3 +1,4 @@
+import cors from "cors";
 import express from "express";
 import authRoutes from "./routes/auth.routes.js";
 import userRoutes from "./routes/user.routes.js";   
@@ -8,6 +9,13 @@ app.post("/test", (req, res) => {
   console.log(">>> /test HIT");
   res.json({ ok: true });
 });
+
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 
 app.use(express.json());
 

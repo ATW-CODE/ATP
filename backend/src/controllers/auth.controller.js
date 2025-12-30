@@ -8,10 +8,6 @@ export const googleAuth = async (req, res) => {
       return res.status(400).json({ message: "ID token is required" });
     }
 
-    console.log("\n===== GOOGLE ID TOKEN (RAW) =====");
-    console.log(idToken);
-    console.log("================================\n");
-
     const result = await handleGoogleAuth(idToken);
 
     return res.status(200).json(result);
