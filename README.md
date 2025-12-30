@@ -131,34 +131,43 @@ Kiosk access validation
 ⚙️ Environment Setup
 
 Backend (backend/.env)
+```
 PORT=5000
 GOOGLE_CLIENT_ID=your_google_client_id
 JWT_SECRET=your_jwt_secret
 DATABASE_URL=your_database_url
-
+```
 
 .env files are ignored and not committed.
 
 ▶️ Running Locally
 Backend
+```
 cd backend
 npm install
 npm run dev
+```
 
 
 Runs at:
 
+```
 http://localhost:5000
+```
 
 Frontend
+```
 cd frontend
 npm install
 npm run dev
+```
 
 
 Runs at:
 
+```
 http://localhost:5173
+````
 
 🧪 Current Status
 
