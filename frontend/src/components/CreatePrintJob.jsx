@@ -7,6 +7,8 @@ export default function CreatePrintJob({ onJobCreated }) {
   const [copies, setCopies] = useState(1);
   const [color, setColor] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [printers, setPrinters] = useState([]);
+  const [printerId, setPrinterId] = useState("");
 
   // Load user files (temporary approach)
   useEffect(() => {
@@ -14,6 +16,14 @@ export default function CreatePrintJob({ onJobCreated }) {
       .then((res) => res.json())
       .then((data) => setFiles(data))
       .catch((err) => console.error("Failed to load files", err));
+  }, []);
+
+  // Load printers
+  useEffect(() => {
+    apiFetch("http://Localhost:5000/printers")
+      .then(res => res.json())
+      .then(setPrinters)
+      .catch(err => console.error(err));
   }, []);
 
   const submitJob = async (e) => {
@@ -24,6 +34,11 @@ export default function CreatePrintJob({ onJobCreated }) {
       return;
     }
 
+    if (!printerId) {
+      alert("Please select a printer location");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -31,6 +46,7 @@ export default function CreatePrintJob({ onJobCreated }) {
         method: "POST",
         body: JSON.stringify({
           fileId,
+          printerId,
           copies,
           color,
         }),
@@ -64,8 +80,29 @@ export default function CreatePrintJob({ onJobCreated }) {
 
       <form onSubmit={submitJob}>
         <div>
+          <label>Printer:</label>
+          <select
+            value={printerId}
+            onChange={(e) => setPrinterId(e.target.value)}
+            required
+          >
+            <option value="">Select printer location</option>
+            {printers.map(p => (
+              <option
+                key={p.id}
+                value={p.id}
+                disabled={p.status !== "online"}
+              >
+                {p.location_name} ({p.status})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label>File:</label>
-          <select value={fileId} onChange={(e) => setFileId(e.target.value)}>
+          <select value={fileId} onChange={(e) => setFileId(e.target.value)}
+            required
+            >
             <option value="">Select file</option>
             {files.map((file) => (
               <option key={file.id} value={file.id}>

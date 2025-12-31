@@ -7,10 +7,10 @@ import pool from "../db/index.js";
 export const createPrintJob = async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { fileId, copies = 1, color = false } = req.body;
+    const { fileId, printerId, copies = 1, color = false } = req.body;
 
-    if (!fileId) {
-      return res.status(400).json({ message: "fileId is required" });
+    if (!fileId || !printerId) {
+      return res.status(400).json({ message: "fileId and printerId are required", });
     }
 
     // 1️⃣ Verify file belongs to user
@@ -27,21 +27,21 @@ export const createPrintJob = async (req, res) => {
       return res.status(404).json({ message: "File not found" });
     }
 
-    // 2️⃣ Assign any available printer (simple strategy)
+    // Verify printer exists and is online
     const printerResult = await pool.query(
       `
       SELECT id
       FROM printers
-      WHERE status != 'offline'
-      LIMIT 1
-      `
+      WHERE id = $1 AND status = 'online'
+      `,
+      [printerId]
     );
 
     if (printerResult.rows.length === 0) {
-      return res.status(409).json({ message: "No printers available at the moment" }); 
+      return res.status(409).json({
+        message: "Selected printer is not available",
+      });
     }
-
-    const printerId = printerResult.rows[0].id;
 
     // 3️⃣ Pricing logic (temporary)
     const pages = 10; // placeholder until file processing exists
