@@ -5,13 +5,9 @@ import userRoutes from "./routes/user.routes.js";
 import printRoutes from "./routes/print.routes.js";
 import fileRoutes from "./routes/file.routes.js";
 import printerRoutes from "./routes/printer.routes.js";
+import kioskRoutes from "./routes/kiosk.routes.js";
 
 const app = express();
-
-app.post("/test", (req, res) => {
-  console.log(">>> /test HIT");
-  res.json({ ok: true });
-});
 
 app.use(
   cors({
@@ -27,6 +23,7 @@ app.use("/auth", authRoutes);
 app.use("/users", userRoutes);
 app.use("/files", fileRoutes);
 app.use("/printers", printerRoutes);
+app.use("/kiosk", kioskRoutes);
 
 app.get("/health", (req, res) => {
   res.json({ status: "OK", service: "ATP Backend" });
