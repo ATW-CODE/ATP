@@ -1,6 +1,7 @@
 import time
 from api.client import post, patch
 from config import PRINTER_ID
+from jobs.execute import execute_job
 
 def claim_job():
   res = post(
@@ -39,8 +40,14 @@ def start_worker_loop():
     print("[WORKER] Started")
 
     while True:
-        job = claim_job()
-        if job:
-            process_job(job)
+        try:
+          job = claim_job()
+
+          if job:
+              process_job(job)
+              execute_job(job)
+        
+        except Exception as e:
+          print("[WORKER] Error:", e)
 
         time.sleep(3)

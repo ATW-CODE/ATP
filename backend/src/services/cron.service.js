@@ -57,3 +57,13 @@ export const cleanupExpiredFiles = async () => {
     console.log(`Deleted ${result.rows.length} expired files`);
   }
 };
+
+export const recoverStuckPrintJobs = async () => {
+await pool.query(`
+  UPDATE print_jobs
+  SET status = 'uploaded',
+      updated_at = now()
+  WHERE status IN ('queued', 'printing')
+    AND updated_at < now() - interval '5 minutes'
+`);
+};
