@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
+import PayButton from "./PayButton";
 
 export default function PrintJobs() {
   const [jobs, setJobs] = useState([]);
@@ -47,6 +48,13 @@ export default function PrintJobs() {
               <td>{job.copies}</td>
               <td>{job.color ? "Yes" : "No"}</td>
               <td>₹{job.cost}</td>
+              <td>
+                {job.payment_status !== "paid" ? (
+                  <PayButton printJobId={job.id} />
+                ) : (
+                  "Paid"
+                )}
+            </td>
               <td>{new Date(job.created_at).toLocaleString()}</td>
             </tr>
           ))}

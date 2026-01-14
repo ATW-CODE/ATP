@@ -7,12 +7,19 @@ import UploadFile from "../components/UploadFile";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [jobs, setJobs] = useState([]);
+
+  const fetchJobs = async () => {
+    const data = await apiFetch("print/jobs/mine");
+    setJobs(data);
+  };
 
   useEffect(() => {
-    apiFetch("http://localhost:5000/users/me")
-      .then((res) => res.json())
-      .then((data) => setUser(data));
+    apiFetch("users/me").then(setUser);
+    fetchJobs();
+
+    const interval = setInterval(fetchJobs, 5000);
+    return () => clearInterval(interval);
   }, []);
 
   if (!user) return <p>Loading...</p>;
@@ -23,10 +30,12 @@ export default function Dashboard() {
       <p>Email: {user.email}</p>
 
       <button onClick={logout}>Logout</button>
-      <UploadFile onUpload={() => fetchFiles()} />
 
-      <CreatePrintJob onJobCreated={() => setRefreshKey((k) => k + 1)} />
-      <PrintJobs key={refreshKey} />
+      <UploadFile onUpload={fetchJobs} />
+
+      <CreatePrintJob onJobCreated={fetchJobs} />
+
+      <PrintJobs jobs={jobs} />
     </div>
   );
 }

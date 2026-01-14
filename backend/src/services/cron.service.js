@@ -44,7 +44,13 @@ export const cleanupExpiredFiles = async () => {
       console.error("File delete failed:", err);
     }
 
-    await pool.query(`DELETE FROM files WHERE id = $1`, [file.id]);
+    await pool.query(`UPDATE files
+                      SET deleted_at = now()
+                      WHERE expires_at < now()
+                      AND id NOT IN (
+                        SELECT DISTINCT file_id FROM print_jobs
+                      );
+                    `, [file.id]);
   }
 
   if (result.rows.length > 0) {
