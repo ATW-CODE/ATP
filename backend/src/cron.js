@@ -11,4 +11,7 @@ setInterval(() => {
   runPrinterLivenessCron();
 }, 60000);
 
-cron.schedule("*/10 * * * *", cleanupExpiredFiles);
+cron.schedule("*/10 * * * *", async () => {
+  console.log("Running file cleanup cron");
+  await cleanupExpiredFiles();
+});

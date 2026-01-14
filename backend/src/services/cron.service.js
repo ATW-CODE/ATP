@@ -33,6 +33,7 @@ export const cleanupExpiredFiles = async () => {
     SELECT id, storage_path
     FROM files
     WHERE expires_at < now()
+      AND deleted_at IS NULL
     `
   );
 

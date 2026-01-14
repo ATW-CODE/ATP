@@ -18,7 +18,7 @@ export const createPrintJob = async (req, res) => {
       `
       SELECT id
       FROM files
-      WHERE id = $1 AND user_id = $2
+      WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL AND expires_at > now()
       `,
       [fileId, userId]
     );

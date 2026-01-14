@@ -3,6 +3,7 @@ dotenv.config();
 
 import app from './app.js';
 import pool from './db/index.js';
+import "./cron.js";
 
 const PORT = process.env.PORT || 5000;
 
