@@ -6,7 +6,7 @@ HEADERS = {
   "Content-Type": "application/json"
 }
 
-def post(path, json=None):
+def post(path, json=None, params=None):
   """
   Send a POST request to the backend API.
   """
@@ -14,6 +14,7 @@ def post(path, json=None):
     f"{API_BASE_URL}{path}",
     headers=HEADERS,
     json=json,
+    params=params,
     timeout=REQUEST_TIMEOUT
   )
 
