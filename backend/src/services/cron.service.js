@@ -1,4 +1,5 @@
 import e from "express";
+import fs from "fs";
 import pool from "../db/index.js";
 
 export async function runPrinterLivenessCron() {
@@ -25,3 +26,27 @@ export async function runPrinterLivenessCron() {
     console.error("Cron error while checking printers:", err.message);
   }
 }
+
+export const cleanupExpiredFiles = async () => {
+  const result = await pool.query(
+    `
+    SELECT id, storage_path
+    FROM files
+    WHERE expires_at < now()
+    `
+  );
+
+  for (const file of result.rows) {
+    try {
+      fs.unlinkSync(file.storage_path);
+    } catch (err) {
+      console.error("File delete failed:", err);
+    }
+
+    await pool.query(`DELETE FROM files WHERE id = $1`, [file.id]);
+  }
+
+  if (result.rows.length > 0) {
+    console.log(`Deleted ${result.rows.length} expired files`);
+  }
+};

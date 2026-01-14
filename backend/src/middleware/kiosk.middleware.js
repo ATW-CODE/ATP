@@ -7,3 +7,4 @@ export default function authenticateKiosk(req, res, next) {
 
   next();
 }
+ 

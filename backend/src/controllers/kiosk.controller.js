@@ -78,3 +78,28 @@ export const claimNextJob = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+/**
+ * GET /kiosk/jobs/active
+ * Get all jobs currently printing on a specific printer
+ */
+
+export const getActivePrinterJobs = async (req, res) => {
+  try {
+    const { printerId } = req.query;
+
+    const result = await pool.query(
+      `
+      SELECT id, file_id, copies, pages, cost, status,
+      FROM print_jobs
+      WHERE printer_id = $1
+        AND status = 'printing'
+      `
+      [printerId]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("Active printer jobs error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

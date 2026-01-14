@@ -54,8 +54,7 @@ export default function CreatePrintJob({ onJobCreated }) {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        // 👇 Show backend message
+      if (!res.ok) {      
         throw new Error(data.message || "Failed to create print job");
       }
 
@@ -64,10 +63,10 @@ export default function CreatePrintJob({ onJobCreated }) {
       setCopies(1);
       setColor(false);
 
-      onJobCreated(); // refresh job list
+      onJobCreated(); 
     } catch (err) {
       console.error("Create print job error:", err);
-      alert(err.message); // 👈 THIS is the key fix
+      alert(err.message);
     } finally {
       setLoading(false);
     }
@@ -104,7 +103,7 @@ export default function CreatePrintJob({ onJobCreated }) {
             required
             >
             <option value="">Select file</option>
-            {files.map((file) => (
+            {Array.isArray(files) && files.map((file) => (
               <option key={file.id} value={file.id}>
                 {file.original_filename}
               </option>

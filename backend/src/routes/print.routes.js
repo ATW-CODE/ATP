@@ -3,6 +3,7 @@ import authenticate from "../middleware/auth.middleware.js";
 import {
   createPrintJob,
   getMyPrintJobs,
+  updatePrintJobStatus
 } from "../controllers/print.controller.js";
 
 const router = express.Router();
@@ -12,5 +13,7 @@ router.post("/jobs", authenticate, createPrintJob);
 
 // Get current user's print jobs
 router.get("/jobs/mine", authenticate, getMyPrintJobs);
+
+router.patch("/:id/status", authenticate, updatePrintJobStatus);
 
 export default router;

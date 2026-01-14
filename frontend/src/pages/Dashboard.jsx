@@ -3,6 +3,7 @@ import { apiFetch } from "../utils/api";
 import { logout } from "../utils/auth";
 import PrintJobs from "../components/PrintJobs";
 import CreatePrintJob from "../components/CreatePrintJob";
+import UploadFile from "../components/UploadFile";
 
 export default function Dashboard() {
   const [user, setUser] = useState(null);
@@ -22,6 +23,7 @@ export default function Dashboard() {
       <p>Email: {user.email}</p>
 
       <button onClick={logout}>Logout</button>
+      <UploadFile onUpload={() => fetchFiles()} />
 
       <CreatePrintJob onJobCreated={() => setRefreshKey((k) => k + 1)} />
       <PrintJobs key={refreshKey} />

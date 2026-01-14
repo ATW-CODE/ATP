@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { runPrinterLivenessCron } from "./services/cron.service.js";
+import { cleanupExpiredFiles } from "./services/cron.service.js";
 
 dotenv.config();
 
@@ -9,3 +10,5 @@ console.log("Starting printer liveness scheduler...");
 setInterval(() => {
   runPrinterLivenessCron();
 }, 60000);
+
+cron.schedule("*/10 * * * *", cleanupExpiredFiles);

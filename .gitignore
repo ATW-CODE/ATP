@@ -18,3 +18,7 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+test.pdf
+
+backend/uploads/

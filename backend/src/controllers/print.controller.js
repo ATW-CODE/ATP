@@ -13,7 +13,7 @@ export const createPrintJob = async (req, res) => {
       return res.status(400).json({ message: "fileId and printerId are required", });
     }
 
-    // 1️⃣ Verify file belongs to user
+    // Verify file belongs to user
     const fileResult = await pool.query(
       `
       SELECT id
@@ -43,12 +43,12 @@ export const createPrintJob = async (req, res) => {
       });
     }
 
-    // 3️⃣ Pricing logic (temporary)
+    // Pricing logic (temporary)
     const pages = 10; // placeholder until file processing exists
     const costPerPage = color ? 5 : 2;
     const cost = pages * copies * costPerPage;
 
-    // 4️⃣ Insert print job
+    // Insert print job
     const result = await pool.query(
       `
       INSERT INTO print_jobs (
@@ -103,6 +103,44 @@ export const getMyPrintJobs = async (req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("Get print jobs error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * PATCH /print/jobs/:id/status
+ * Update print job status
+ */
+
+export const updatePrintJobStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.sub;
+    const { status } = req.body;
+
+    const validStatuses = ["queued", "printing", "completed", "failed"];
+
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: "Invalid status value" });
+    }
+
+    const result = await pool.query(
+      `
+      UPDATE print_jobs
+      SET status = $1, updated_at = now()
+      WHERE id = $2 AND user_id = $3
+      RETURNING id, status, updated_at;
+      `,
+      [status, id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Print job not found" });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error("Update print job status error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
