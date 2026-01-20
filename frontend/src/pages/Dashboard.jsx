@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
 import { logout } from "../utils/auth";
-import PrintJobs from "../components/PrintJobs";
+import PrintJobs from "../components/PrintJobsTable";
 import CreatePrintJob from "../components/CreatePrintJob";
 import UploadFile from "../components/UploadFile";
 
@@ -15,8 +15,18 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    apiFetch("users/me").then(setUser);
-    fetchJobs();
+    const init = async () => {
+      try {
+        const me = await apiFetch("users/me");
+        setUser(me);
+        await fetchJobs();
+      } catch (err) {
+        console.error(err);
+        logout();
+      }
+    };
+
+    init();
 
     const interval = setInterval(fetchJobs, 5000);
     return () => clearInterval(interval);
@@ -27,14 +37,12 @@ export default function Dashboard() {
   return (
     <div style={{ padding: "40px" }}>
       <h2>Welcome, {user.name}</h2>
-      <p>Email: {user.email}</p>
+      <p>{user.email}</p>
 
       <button onClick={logout}>Logout</button>
 
       <UploadFile onUpload={fetchJobs} />
-
       <CreatePrintJob onJobCreated={fetchJobs} />
-
       <PrintJobs jobs={jobs} />
     </div>
   );

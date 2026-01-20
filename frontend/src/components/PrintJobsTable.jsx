@@ -1,27 +1,8 @@
-import React, { useEffect, useState } from "react";
-import { apiFetch } from "../utils/api";
+import React from "react";
 import PayButton from "./PayButton";
 
-export default function PrintJobs() {
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    apiFetch("http://localhost:5000/print/jobs/mine")
-      .then((res) => res.json())
-      .then((data) => {
-        setJobs(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Failed to load print jobs", err);
-        setLoading(false);
-      });
-  }, []);
-
-  if (loading) return <p>Loading print jobs...</p>;
-
-  if (jobs.length === 0) {
+export default function PrintJobs({ jobs }) {
+  if (!jobs || jobs.length === 0) {
     return <p>No print jobs yet.</p>;
   }
 
@@ -37,6 +18,7 @@ export default function PrintJobs() {
             <th>Copies</th>
             <th>Color</th>
             <th>Cost</th>
+            <th>Payment</th>
             <th>Created</th>
           </tr>
         </thead>
@@ -54,7 +36,7 @@ export default function PrintJobs() {
                 ) : (
                   "Paid"
                 )}
-            </td>
+              </td>
               <td>{new Date(job.created_at).toLocaleString()}</td>
             </tr>
           ))}

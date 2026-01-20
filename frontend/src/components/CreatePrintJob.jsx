@@ -12,16 +12,14 @@ export default function CreatePrintJob({ onJobCreated }) {
 
   // Load user files (temporary approach)
   useEffect(() => {
-    apiFetch("http://localhost:5000/files/mine")
-      .then((res) => res.json())
-      .then((data) => setFiles(data))
+    apiFetch("files/mine")
+      .then(setFiles)
       .catch((err) => console.error("Failed to load files", err));
   }, []);
 
   // Load printers
   useEffect(() => {
-    apiFetch("http://Localhost:5000/printers")
-      .then(res => res.json())
+    apiFetch("printers")
       .then(setPrinters)
       .catch(err => console.error(err));
   }, []);
@@ -42,7 +40,7 @@ export default function CreatePrintJob({ onJobCreated }) {
     setLoading(true);
 
     try {
-      const res = await apiFetch("http://localhost:5000/print/jobs", {
+      const data = await apiFetch("print/jobs", {
         method: "POST",
         body: JSON.stringify({
           fileId,
@@ -51,12 +49,6 @@ export default function CreatePrintJob({ onJobCreated }) {
           color,
         }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {      
-        throw new Error(data.message || "Failed to create print job");
-      }
 
       // Reset form
       setFileId("");

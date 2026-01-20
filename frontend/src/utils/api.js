@@ -1,23 +1,21 @@
-export async function apiFetch(url, options = {}) {
+const API_BASE = "http://localhost:5000";
+
+export async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("atp_token");
 
-  const res = await fetch(url, {
+  const res = await fetch(`${API_BASE}/${path}`, {
     ...options,
     headers: {
-      ...(options.headers || {}),
-      Authorization: token ? `Bearer ${token}` : "",
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
     },
   });
 
-  // 🔴 Token expired or invalid
-  if (res.status === 401) {
-    localStorage.removeItem("atp_token");
-
-    // Redirect to login
-    window.location.href = "/login";
-    throw new Error("Session expired");
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || "API error");
   }
 
-  return res;
+  return res.json();
 }

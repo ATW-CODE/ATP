@@ -118,6 +118,31 @@ export const updatePrintJobStatus = async (req, res) => {
     const userId = req.user.sub;
     const { status } = req.body;
 
+    if (status === "failed") {
+      const job = await getJob(jobId);
+
+      if (job.retry_count + 1 < job.max_retries) {
+        await pool.query(`
+          UPDATE print_jobs
+          SET
+            status = 'uploaded',
+            retry_count = retry_count + 1,
+            last_error = $1
+          WHERE id = $2
+        `, [error, jobId]);
+      } else {
+        await pool.query(`
+          UPDATE print_jobs
+          SET
+            status = 'failed',
+            retry_count = retry_count + 1,
+            last_error = $1
+          WHERE id = $2
+        `, [error, jobId]);
+      }
+    }
+
+
     const validStatuses = ["queued", "printing", "completed", "failed"];
 
     if (!validStatuses.includes(status)) {
