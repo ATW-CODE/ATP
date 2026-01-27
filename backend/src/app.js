@@ -7,6 +7,7 @@ import fileRoutes from "./routes/file.routes.js";
 import printerRoutes from "./routes/printer.routes.js";
 import kioskRoutes from "./routes/kiosk.routes.js";
 import paymentRoutes from "./routes/payment.route.js";
+import { kioskAuth } from "./controllers/kiosk.auth.controller.js";
 
 const app = express();
 
@@ -34,5 +35,6 @@ app.get("/health", (req, res) => {
   res.json({ status: "OK", service: "ATP Backend" });
 });
 app.use("/payments", paymentRoutes);
+app.use("/kiosk", kioskAuth);
 
 export default app;

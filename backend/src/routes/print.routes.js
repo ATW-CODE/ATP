@@ -14,6 +14,6 @@ router.post("/jobs", authenticate, createPrintJob);
 // Get current user's print jobs
 router.get("/jobs/mine", authenticate, getMyPrintJobs);
 
-router.patch("/:id/status", authenticate, updatePrintJobStatus);
+router.patch("/jobs/:id/status", authenticate, updatePrintJobStatus);
 
 export default router;

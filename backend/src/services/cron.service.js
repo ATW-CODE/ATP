@@ -28,42 +28,55 @@ export async function runPrinterLivenessCron() {
 }
 
 export const cleanupExpiredFiles = async () => {
-  const result = await pool.query(
-    `
+  const { rows } = await pool.query(`
     SELECT id, storage_path
     FROM files
     WHERE expires_at < now()
       AND deleted_at IS NULL
-    `
-  );
+      AND id NOT IN (
+        SELECT DISTINCT file_id FROM print_jobs
+      )
+  `);
 
-  for (const file of result.rows) {
+  for (const file of rows) {
     try {
+      // 1️⃣ Mark deleted in DB first
+      await pool.query(
+        `UPDATE files SET deleted_at = now() WHERE id = $1`,
+        [file.id]
+      );
+
+      // 2️⃣ Then delete from disk
       fs.unlinkSync(file.storage_path);
     } catch (err) {
-      console.error("File delete failed:", err);
+      console.error("Failed to delete file:", file.id, err.message);
     }
-
-    await pool.query(`UPDATE files
-                      SET deleted_at = now()
-                      WHERE expires_at < now()
-                      AND id NOT IN (
-                        SELECT DISTINCT file_id FROM print_jobs
-                      );
-                    `, [file.id]);
   }
 
-  if (result.rows.length > 0) {
-    console.log(`Deleted ${result.rows.length} expired files`);
+  if (rows.length) {
+    console.log(`Deleted ${rows.length} expired files`);
   }
 };
 
 export const recoverStuckPrintJobs = async () => {
-await pool.query(`
-  UPDATE print_jobs
-  SET status = 'uploaded',
-      updated_at = now()
-  WHERE status IN ('queued', 'printing')
-    AND updated_at < now() - interval '5 minutes'
-`);
+  // Jobs stuck in printing → fail them
+  await pool.query(`
+    UPDATE print_jobs
+    SET status = 'failed',
+        failed_at = now(),
+        error = 'Printer timeout'
+    WHERE status = 'printing'
+      AND started_at < now() - interval '10 minutes'
+  `);
+
+  // Retry failed jobs (max 3)
+  await pool.query(`
+    UPDATE print_jobs
+    SET status = 'queued',
+        updated_at = now(),
+        retries = retries + 1
+    WHERE status = 'failed'
+      AND retries < 3
+      AND failed_at < now() - interval '2 minutes'
+  `);
 };

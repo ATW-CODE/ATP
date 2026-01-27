@@ -8,29 +8,38 @@ import UploadFile from "../components/UploadFile";
 export default function Dashboard() {
   const [user, setUser] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [files, setFiles] = useState([]);
 
   const fetchJobs = async () => {
     const data = await apiFetch("print/jobs/mine");
     setJobs(data);
   };
 
+  const fetchFiles = async () => {
+    const data = await apiFetch("files/mine");
+    setFiles(data);
+  };
+
   useEffect(() => {
-    const init = async () => {
-      try {
-        const me = await apiFetch("users/me");
-        setUser(me);
-        await fetchJobs();
-      } catch (err) {
-        console.error(err);
+  const init = async () => {
+    try {
+      const me = await apiFetch("users/me");
+      setUser(me);
+      await fetchJobs();
+      await fetchFiles();
+    } catch (err) {
+      console.error(err);
+      if (err.message === "Unauthorized") {
         logout();
       }
-    };
+    }
+  };
 
-    init();
+  init();
 
-    const interval = setInterval(fetchJobs, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const interval = setInterval(fetchJobs, 5000);
+  return () => clearInterval(interval);
+}, []);
 
   if (!user) return <p>Loading...</p>;
 
@@ -41,8 +50,11 @@ export default function Dashboard() {
 
       <button onClick={logout}>Logout</button>
 
-      <UploadFile onUpload={fetchJobs} />
-      <CreatePrintJob onJobCreated={fetchJobs} />
+      <UploadFile onUpload={fetchFiles} />
+      <CreatePrintJob 
+        files={files}
+        onJobCreated={fetchJobs} 
+      />
       <PrintJobs jobs={jobs} />
     </div>
   );

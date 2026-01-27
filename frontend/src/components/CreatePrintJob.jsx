@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
 
-export default function CreatePrintJob({ onJobCreated }) {
-  const [files, setFiles] = useState([]);
+export default function CreatePrintJob({ files, onJobCreated }) {
   const [fileId, setFileId] = useState("");
   const [copies, setCopies] = useState(1);
   const [color, setColor] = useState(false);
@@ -10,19 +9,13 @@ export default function CreatePrintJob({ onJobCreated }) {
   const [printers, setPrinters] = useState([]);
   const [printerId, setPrinterId] = useState("");
 
-  // Load user files (temporary approach)
-  useEffect(() => {
-    apiFetch("files/mine")
-      .then(setFiles)
-      .catch((err) => console.error("Failed to load files", err));
-  }, []);
-
   // Load printers
   useEffect(() => {
     apiFetch("printers")
       .then(setPrinters)
       .catch(err => console.error(err));
   }, []);
+
 
   const submitJob = async (e) => {
     e.preventDefault();

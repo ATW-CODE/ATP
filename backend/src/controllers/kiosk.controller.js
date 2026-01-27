@@ -59,6 +59,7 @@ export const claimNextJob = async (req, res) => {
         FROM print_jobs
         WHERE printer_id = $1
           AND status = 'uploaded'
+          AND payment_status = 'paid'
         ORDER BY created_at
         LIMIT 1
         FOR UPDATE SKIP LOCKED

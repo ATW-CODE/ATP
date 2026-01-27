@@ -12,6 +12,7 @@ export async function apiFetch(path, options = {}) {
     },
   });
 
+
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || "API error");
