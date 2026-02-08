@@ -30,3 +30,6 @@ Manual.txt
 venv/
 __pycache__/
 *.pyc
+
+# Kiosk Agent later to be stored in .env
+kiosk-agent/config.py
