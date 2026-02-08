@@ -1,11 +1,18 @@
 import { Upload, LayoutGrid } from "lucide-react";
 import { Button } from "@/app/components/ui/button";
 import { useState } from "react";
+import { on } from "events";
 
 interface UploadedFile {
   id: string;
   original_filename: string;
   pages: number;
+}
+
+export interface UploadedDocument {
+  file: File;
+  fileId: string;
+  totalPages: number;
 }
 
 interface DocumentUploadScreenProps {
@@ -26,8 +33,6 @@ export function DocumentUploadScreen({
     if (!file) return;
 
     try {
-      setUploading(true);
-
       const formData = new FormData();
       formData.append("file", file);
 
@@ -45,18 +50,24 @@ export function DocumentUploadScreen({
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "File upload failed");
+        throw new Error(data.message || "Upload failed");
       }
 
-      // Move app to preview / configuration stage
-      onFileUploaded(data);
+      onFileUploaded(file);
+
+      // Pass uploaded file metadata upward
+      // onFileUploaded({
+      //   file,
+      //   fileId: data.file.id,
+      //   totalPages: 8,
+      // });
+
     } catch (err) {
       console.error("Upload error:", err);
-      alert("File upload failed. Please try again.");
-    } finally {
-      setUploading(false);
+      alert("File upload failed");
     }
   };
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen p-6 bg-neutral-900">

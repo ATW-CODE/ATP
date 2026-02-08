@@ -10,6 +10,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  optimizeDeps: {
+    include: ["pdfjs-dist"],
+  },
   server: {
     host: "0.0.0.0",
     port: 5174,

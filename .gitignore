@@ -22,3 +22,11 @@ Thumbs.db
 test.pdf
 
 backend/uploads/
+
+dirMap.txt
+Manual.txt
+
+# Python
+venv/
+__pycache__/
+*.pyc

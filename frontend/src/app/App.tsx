@@ -9,6 +9,7 @@ import { PaymentModal } from '@/app/components/PaymentModal';
 import { ProcessingScreen } from '@/app/components/ProcessingScreen';
 import { SuccessScreen } from '@/app/components/SuccessScreen';
 import { X, ArrowLeft } from 'lucide-react';
+import { F } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
 
 type AppStage = 'dashboard' | 'upload' | 'configure' | 'payment' | 'processing' | 'success';
 
@@ -22,6 +23,8 @@ interface Printer {
 
 interface DocumentInfo {
   file: File;
+  fileId: string;
+  fileName: string;
   totalPages: number;
 }
 
@@ -70,13 +73,32 @@ export default function App() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [jobId, setJobId] = useState('');
 
-  const handleFileSelect = (file: File) => {
-    // Mock: Simulate document with 8 pages
+  const handleFileSelect = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(
+      `${import.meta.env.VITE_API_BASE_URL}/files`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+        },
+        body: formData,
+      }
+    );
+
+    const data = await res.json();
+    const uploaded = data.file;
+
     setDocument({
       file,
-      totalPages: 8,
+      fileId: data.id,
+      fileName: data.original_filename,
+      totalPages: data.pages,
     });
-    setStage('configure');
+
+    setStage("configure");
   };
 
   const calculateCost = () => {
@@ -178,7 +200,7 @@ export default function App() {
           {/* Left: Preview (Fixed) */}
           <div className="sticky top-6 h-fit">
             {document && (
-              <DocumentPreview fileName={document.file.name} totalPages={document.totalPages} />
+              <DocumentPreview file={document.file} />
             )}
           </div>
 
@@ -255,7 +277,7 @@ export default function App() {
           <div className="px-4" style={{ height: '42vh' }}>
             {document && (
               <div className="h-full">
-                <DocumentPreview fileName={document.file.name} totalPages={document.totalPages} />
+                <DocumentPreview file={document.file} />
               </div>
             )}
           </div>
