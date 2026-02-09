@@ -33,3 +33,5 @@ __pycache__/
 
 # Kiosk Agent later to be stored in .env
 kiosk-agent/config.py
+
+scripts

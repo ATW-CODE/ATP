@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, use} from 'react';
 import { LoginScreen } from '@/app/components/LoginScreen';
 import { Dashboard } from '@/app/components/Dashboard';
 import { DocumentUploadScreen } from '@/app/components/DocumentUploadScreen';
@@ -10,6 +10,7 @@ import { ProcessingScreen } from '@/app/components/ProcessingScreen';
 import { SuccessScreen } from '@/app/components/SuccessScreen';
 import { X, ArrowLeft } from 'lucide-react';
 import { F } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
+import { set } from 'date-fns';
 
 type AppStage = 'dashboard' | 'upload' | 'configure' | 'payment' | 'processing' | 'success';
 
@@ -28,37 +29,38 @@ interface DocumentInfo {
   totalPages: number;
 }
 
-// Mock printer data
-const mockPrinters: Printer[] = [
-  {
-    id: '1',
-    name: 'HP LaserJet Pro',
-    location: 'Ground Floor - Counter 1',
-    status: 'online',
-    supportsColor: false,
-  },
-  {
-    id: '2',
-    name: 'Canon PIXMA Color',
-    location: 'Ground Floor - Counter 2',
-    status: 'online',
-    supportsColor: true,
-  },
-  {
-    id: '3',
-    name: 'Epson L3210',
-    location: 'First Floor - Counter 3',
-    status: 'busy',
-    supportsColor: true,
-  },
-  {
-    id: '4',
-    name: 'Brother HL-L2321D',
-    location: 'First Floor - Counter 4',
-    status: 'offline',
-    supportsColor: false,
-  },
-];
+
+// // Mock printer data
+// const mockPrinters: Printer[] = [
+//   {
+//     id: '1',
+//     name: 'HP LaserJet Pro',
+//     location: 'Ground Floor - Counter 1',
+//     status: 'online',
+//     supportsColor: false,
+//   },
+//   {
+//     id: '2',
+//     name: 'Canon PIXMA Color',
+//     location: 'Ground Floor - Counter 2',
+//     status: 'online',
+//     supportsColor: true,
+//   },
+//   {
+//     id: '3',
+//     name: 'Epson L3210',
+//     location: 'First Floor - Counter 3',
+//     status: 'busy',
+//     supportsColor: true,
+//   },
+//   {
+//     id: '4',
+//     name: 'Brother HL-L2321D',
+//     location: 'First Floor - Counter 4',
+//     status: 'offline',
+//     supportsColor: false,
+//   },
+// ];
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -72,6 +74,16 @@ export default function App() {
   const [paperSize, setPaperSize] = useState('A4');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [jobId, setJobId] = useState('');
+  const [printers, setPrinters] = useState<Printer[]>([]);
+  const [loadingPrinters, setLoadingPrinters] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem("atp_token");
+
+    if (token) {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const handleFileSelect = async (file: File) => {
     const formData = new FormData();
@@ -100,6 +112,69 @@ export default function App() {
 
     setStage("configure");
   };
+
+  const fetchPrinters = async () => {
+    try {
+      setLoadingPrinters(true);
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/printers`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+          },
+        }
+      );
+
+      const text = await res.text();
+
+      if (res.status === 401) {
+        console.warn("Token expired");
+
+        localStorage.removeItem("atp_token");
+        setIsAuthenticated(false);
+        return;
+      }
+
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Invalid JSON from backend");
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to load printers");
+      }
+
+      const mapped: Printer[] = data.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        location: p.location_name,
+        status: p.status,
+        supportsColor: true,
+      }));
+
+      setPrinters(mapped);
+
+    } catch (err) {
+      console.error("Printer fetch error:", err);
+      setPrinters([]);
+    } finally {
+      setLoadingPrinters(false);
+    }
+  };
+
+    useEffect(() => {
+      if (!isAuthenticated) return;
+  
+      fetchPrinters();
+
+      // Refresh every 10s
+      const interval = setInterval(fetchPrinters, 10000);
+
+      return () => clearInterval(interval);
+    }, [isAuthenticated]);
 
   const calculateCost = () => {
     if (!document) return 0;
@@ -143,7 +218,7 @@ export default function App() {
 
   const isPrintReady = selectedPrinter !== null && document !== null;
   const totalCost = calculateCost();
-  const selectedPrinterData = mockPrinters.find(p => p.id === selectedPrinter);
+  const selectedPrinterData = printers.find(p => p.id === selectedPrinter);
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -220,7 +295,7 @@ export default function App() {
               </button>
             </div>
             <PrintConfiguration
-              printers={mockPrinters}
+              printers={printers}
               selectedPrinter={selectedPrinter}
               onSelectPrinter={setSelectedPrinter}
               copies={copies}
@@ -285,7 +360,7 @@ export default function App() {
           {/* Scrollable Configuration Section */}
           <div className="px-4 py-4 overflow-y-auto" style={{ maxHeight: '50vh' }}>
             <PrintConfiguration
-              printers={mockPrinters}
+              printers={printers}
               selectedPrinter={selectedPrinter}
               onSelectPrinter={setSelectedPrinter}
               copies={copies}
