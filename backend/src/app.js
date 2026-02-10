@@ -17,7 +17,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
-      "https://transcription-committed-handbags-strap.trycloudflare.com",
+      "https://livestock-involved-area-merchant.trycloudflare.com",
     ],
     credentials: true,
   })

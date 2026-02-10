@@ -36,22 +36,22 @@ export function DocumentUploadScreen({
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/files`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
-          },
-          body: formData,
-        }
-      );
+      // const res = await fetch(
+      //   `${import.meta.env.VITE_API_BASE_URL}/files`,
+      //   {
+      //     method: "POST",
+      //     headers: {
+      //       Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+      //     },
+      //     body: formData,
+      //   }
+      // );
 
-      const data = await res.json();
+      // const data = await res.json();
 
-      if (!res.ok) {
-        throw new Error(data.message || "Upload failed");
-      }
+      // if (!res.ok) {
+      //   throw new Error(data.message || "Upload failed");
+      // }
 
       onFileUploaded(file);
 

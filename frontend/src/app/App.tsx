@@ -9,7 +9,7 @@ import { PaymentModal } from '@/app/components/PaymentModal';
 import { ProcessingScreen } from '@/app/components/ProcessingScreen';
 import { SuccessScreen } from '@/app/components/SuccessScreen';
 import { X, ArrowLeft } from 'lucide-react';
-import { F } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
+import { c, F } from 'node_modules/vite/dist/node/moduleRunnerTransport.d-DJ_mE5sf';
 import { set } from 'date-fns';
 
 type AppStage = 'dashboard' | 'upload' | 'configure' | 'payment' | 'processing' | 'success';
@@ -102,12 +102,13 @@ export default function App() {
 
     const data = await res.json();
     const uploaded = data.file;
+    console.log("Upload response:", uploaded.id, uploaded.original_filename, uploaded.total_pages);
 
     setDocument({
       file,
-      fileId: data.id,
-      fileName: data.original_filename,
-      totalPages: data.pages,
+      fileId: uploaded.id,
+      fileName: uploaded.original_filename,
+      totalPages: uploaded.total_pages,
     });
 
     setStage("configure");
@@ -165,22 +166,85 @@ export default function App() {
     }
   };
 
-    useEffect(() => {
-      if (!isAuthenticated) return;
-  
-      fetchPrinters();
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-      // Refresh every 10s
-      const interval = setInterval(fetchPrinters, 10000);
+    fetchPrinters();
 
-      return () => clearInterval(interval);
-    }, [isAuthenticated]);
+    // Refresh every 10s
+    const interval = setInterval(fetchPrinters, 10000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  const parsePageRange = (range: string, totalPages: number): number => {
+    if (!range || range === "all") {
+      return totalPages;
+    }
+
+    const pages = new Set<number>();
+
+    const parts = range.split(",");
+
+    for (const part of parts) {
+      const trimmed = part.trim();
+
+      // Handle ranges like 1-3
+      if (trimmed.includes("-")) {
+        const [startStr, endStr] = trimmed.split("-");
+
+        const start = Number(startStr);
+        const end = Number(endStr);
+
+        if (isNaN(start) || isNaN(end)) continue;
+
+        for (let i = start; i <= end; i++) {
+          if (i >= 1 && i <= totalPages) {
+            pages.add(i);
+          }
+        }
+      }
+
+      // Handle single numbers like 6
+      else {
+        const num = Number(trimmed);
+
+        if (!isNaN(num) && num >= 1 && num <= totalPages) {
+          pages.add(num);
+        }
+      }
+    }
+
+    return pages.size;
+  };  
+
+  const getSelectedPagesCount = () => {
+    if (!document) return 0;
+      
+      return parsePageRange(pageRange, document.totalPages);
+    };
 
   const calculateCost = () => {
-    if (!document) return 0;
+    if (!document) {
+      console.warn("totalPages not available");
+      return 0;
+    }
+
     const baseCostPerPage = colorMode === 'color' ? 3 : 1.5;
-    const totalPages = pageRange === 'all' ? document.totalPages : document.totalPages / 2; // Simplified
-    return Math.round(totalPages * copies * baseCostPerPage);
+    
+    console.log("pageRange: ", pageRange);
+    console.log("totalPages: ", document.totalPages);
+
+    const selectedPages = parsePageRange(pageRange, document.totalPages);
+    
+    console.log("Selected Pages: ", selectedPages);
+    console.log("Copies: ", copies);
+    console.log("Base CostPerPage: ", baseCostPerPage);
+
+    const cost = Math.round(selectedPages * copies * baseCostPerPage);
+    console.log("Cost", cost);
+    
+    return cost;
   };
 
   const handlePayClick = () => {
@@ -313,7 +377,7 @@ export default function App() {
             <div className="mt-6 bg-white rounded-xl shadow-md p-4">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 text-sm text-neutral-600">
-                  <span>{document?.totalPages || 0} pages</span>
+                  <span>{getSelectedPagesCount()} pages</span>
                   <span>•</span>
                   <span>{copies} {copies === 1 ? 'copy' : 'copies'}</span>
                 </div>
@@ -381,7 +445,7 @@ export default function App() {
         <div className="md:hidden">
           <StickyBottomBar
             totalCost={totalCost}
-            pages={document?.totalPages || 0}
+            pages={getSelectedPagesCount()}
             copies={copies}
             disabled={!isPrintReady}
             onPayClick={handlePayClick}
