@@ -76,6 +76,8 @@ export default function App() {
   const [jobId, setJobId] = useState('');
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [loadingPrinters, setLoadingPrinters] = useState(true);
+  const [quote, setQuote] = useState<number | null>(null);
+  const [loadingQuote, setLoadingQuote] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("atp_token");
@@ -224,28 +226,70 @@ export default function App() {
       return parsePageRange(pageRange, document.totalPages);
     };
 
-  const calculateCost = () => {
-    if (!document) {
-      console.warn("totalPages not available");
-      return 0;
+  // const calculateCost = () => {
+  //   if (!document) {
+  //     console.warn("totalPages not available");
+  //     return 0;
+  //   }
+
+  //   const baseCostPerPage = colorMode === 'color' ? 3 : 1.5;
+    
+  //   console.log("pageRange: ", pageRange);
+  //   console.log("totalPages: ", document.totalPages);
+
+  //   const selectedPages = parsePageRange(pageRange, document.totalPages);
+    
+  //   console.log("Selected Pages: ", selectedPages);
+  //   console.log("Copies: ", copies);
+  //   console.log("Base CostPerPage: ", baseCostPerPage);
+
+  //   const cost = Math.round(selectedPages * copies * baseCostPerPage);
+  //   console.log("Cost", cost);
+    
+  //   return cost;
+  // };
+
+  const fetchQuote = async () => {
+    if (!document || !selectedPrinter) return;
+
+    try {
+      setLoadingQuote(true);
+
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/print/quote`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+          },
+          body: JSON.stringify({
+            fileId: document.fileId,
+            copies,
+            colorMode,     // backend will convert later
+            pageRange,
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Quote failed");
+      }
+
+      setQuote(data.total); // from backend
+    } catch (err) {
+      console.error("Quote error:", err);
+      setQuote(null);
+    } finally {
+      setLoadingQuote(false);
     }
-
-    const baseCostPerPage = colorMode === 'color' ? 3 : 1.5;
-    
-    console.log("pageRange: ", pageRange);
-    console.log("totalPages: ", document.totalPages);
-
-    const selectedPages = parsePageRange(pageRange, document.totalPages);
-    
-    console.log("Selected Pages: ", selectedPages);
-    console.log("Copies: ", copies);
-    console.log("Base CostPerPage: ", baseCostPerPage);
-
-    const cost = Math.round(selectedPages * copies * baseCostPerPage);
-    console.log("Cost", cost);
-    
-    return cost;
   };
+
+  useEffect(() => {
+    fetchQuote();
+  }, [document, copies, colorMode, pageRange, selectedPrinter]);
 
   const handlePayClick = () => {
     setShowPaymentModal(true);
@@ -281,7 +325,7 @@ export default function App() {
   };
 
   const isPrintReady = selectedPrinter !== null && document !== null;
-  const totalCost = calculateCost();
+  const totalCost = quote ?? 0;
   const selectedPrinterData = printers.find(p => p.id === selectedPrinter);
 
   const handleLogin = () => {
@@ -382,7 +426,7 @@ export default function App() {
                   <span>{copies} {copies === 1 ? 'copy' : 'copies'}</span>
                 </div>
                 <div className="flex items-center gap-1 text-2xl font-bold text-neutral-900">
-                  ₹{totalCost}
+                  {loadingQuote ? "..." : `₹${totalCost}`}
                 </div>
               </div>
               <button
