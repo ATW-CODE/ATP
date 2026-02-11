@@ -291,8 +291,42 @@ export default function App() {
     fetchQuote();
   }, [document, copies, colorMode, pageRange, selectedPrinter]);
 
-  const handlePayClick = () => {
-    setShowPaymentModal(true);
+  const handlePayClick = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/print/jobs`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+          },
+          body: JSON.stringify({
+            fileId: document?.fileId,
+            printerId: selectedPrinter,
+            totalPages: getSelectedPagesCount(),
+            copies,
+            colorMode: colorMode === "color",
+          }),
+        }
+      );
+
+      const data = await res.json();
+
+      console.log("Print job response:", data);
+
+      if (!res.ok) {
+        throw new Error(data.message);
+      }
+
+      console.log("Print job created:", data);
+
+      setShowPaymentModal(true);
+
+    } catch (err) {
+      console.error("Job creation failed:", err);
+      alert("Failed to create print job");
+    }
   };
 
   const handlePaymentSuccess = () => {
@@ -431,7 +465,7 @@ export default function App() {
               </div>
               <button
                 onClick={handlePayClick}
-                disabled={!isPrintReady}
+                disabled={!isPrintReady || loadingQuote || quote === null}
                 className="w-full bg-red-500 hover:bg-red-600 disabled:bg-neutral-300 disabled:cursor-not-allowed text-white h-14 text-lg font-semibold rounded-xl shadow-lg transition-colors"
               >
                 Pay & Print

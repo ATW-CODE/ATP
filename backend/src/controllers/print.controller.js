@@ -106,7 +106,7 @@ function parsePageRange(range, totalPages) {
 export const createPrintJob = async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { fileId, printerId, copies = 1, color = false } = req.body;
+    const { fileId, printerId, copies = 1, colorMode, pageRange = "all" } = req.body;
 
     if (!fileId || !printerId) {
       return res.status(400).json({ message: "fileId and printerId are required", });
@@ -115,7 +115,9 @@ export const createPrintJob = async (req, res) => {
     // Verify file belongs to user
     const fileResult = await pool.query(
       `
-      SELECT id
+      SELECT 
+        id, 
+        total_pages
       FROM files
       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL AND expires_at > now()
       `,
@@ -154,8 +156,6 @@ export const createPrintJob = async (req, res) => {
 
     const cost = Math.round(selectedPages * copies * rate);
 
-
-
     // // Pricing logic (temporary)
     // const pages = 10; // placeholder until file processing exists
     // const costPerPage = color ? 5 : 2;
@@ -170,7 +170,7 @@ export const createPrintJob = async (req, res) => {
         printer_id,
         status,
         copies,
-        color_mode,
+        color,
         page_range,
         pages,
         cost
@@ -178,7 +178,7 @@ export const createPrintJob = async (req, res) => {
       VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8)
       RETURNING *
       `,
-      [userId, fileId, printerId, copies, colorMode, pageRange, pages, cost]
+      [userId, fileId, printerId, copies, colorMode, pageRange, selectedPages, cost]
     );
 
     res.status(201).json(result.rows[0]);
