@@ -30,38 +30,6 @@ interface DocumentInfo {
 }
 
 
-// // Mock printer data
-// const mockPrinters: Printer[] = [
-//   {
-//     id: '1',
-//     name: 'HP LaserJet Pro',
-//     location: 'Ground Floor - Counter 1',
-//     status: 'online',
-//     supportsColor: false,
-//   },
-//   {
-//     id: '2',
-//     name: 'Canon PIXMA Color',
-//     location: 'Ground Floor - Counter 2',
-//     status: 'online',
-//     supportsColor: true,
-//   },
-//   {
-//     id: '3',
-//     name: 'Epson L3210',
-//     location: 'First Floor - Counter 3',
-//     status: 'busy',
-//     supportsColor: true,
-//   },
-//   {
-//     id: '4',
-//     name: 'Brother HL-L2321D',
-//     location: 'First Floor - Counter 4',
-//     status: 'offline',
-//     supportsColor: false,
-//   },
-// ];
-
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [stage, setStage] = useState<AppStage>('upload');
@@ -226,29 +194,6 @@ export default function App() {
       return parsePageRange(pageRange, document.totalPages);
     };
 
-  // const calculateCost = () => {
-  //   if (!document) {
-  //     console.warn("totalPages not available");
-  //     return 0;
-  //   }
-
-  //   const baseCostPerPage = colorMode === 'color' ? 3 : 1.5;
-    
-  //   console.log("pageRange: ", pageRange);
-  //   console.log("totalPages: ", document.totalPages);
-
-  //   const selectedPages = parsePageRange(pageRange, document.totalPages);
-    
-  //   console.log("Selected Pages: ", selectedPages);
-  //   console.log("Copies: ", copies);
-  //   console.log("Base CostPerPage: ", baseCostPerPage);
-
-  //   const cost = Math.round(selectedPages * copies * baseCostPerPage);
-  //   console.log("Cost", cost);
-    
-  //   return cost;
-  // };
-
   const fetchQuote = async () => {
     if (!document || !selectedPrinter) return;
 
@@ -293,6 +238,15 @@ export default function App() {
 
   const handlePayClick = async () => {
     try {
+      console.log("Creating job with:", {
+        fileId: document?.fileId,
+        printerId: selectedPrinter,
+        pageRange,
+        orientation,
+        copies,
+        colorMode,
+      });
+
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/print/jobs`,
         {
@@ -304,12 +258,15 @@ export default function App() {
           body: JSON.stringify({
             fileId: document?.fileId,
             printerId: selectedPrinter,
-            totalPages: getSelectedPagesCount(),
+            pageRange,
+            orientation: orientation,
             copies,
             colorMode: colorMode === "color",
           }),
         }
       );
+
+      console.log("Sending Orientation:", orientation);
 
       const data = await res.json();
 
@@ -366,6 +323,23 @@ export default function App() {
     setIsAuthenticated(true);
   };
 
+  const handleLogout = () => {
+    // Remove token
+    localStorage.removeItem("atp_token");
+
+    // Reset app state
+    setIsAuthenticated(false);
+    setStage("upload");
+    setDocument(null);
+    setSelectedPrinter(null);
+    setCopies(1);
+    setPageRange("all");
+
+    // Optional: force reload (failsafe)
+    window.location.reload();
+  };
+
+
   const handleGoToDashboard = () => {
     setStage('dashboard');
   };
@@ -381,8 +355,10 @@ export default function App() {
 
   // Dashboard Stage
   if (stage === 'dashboard') {
-    return <Dashboard onNewPrint={handleGoToUpload} userName="User" />;
+    return <Dashboard onNewPrint={handleGoToUpload} onLogout={handleLogout} userName="User" />;
   }
+
+
 
   // Upload Stage
   if (stage === 'upload') {
@@ -415,10 +391,12 @@ export default function App() {
         {/* Desktop Layout */}
         <div className="hidden md:grid md:grid-cols-2 md:gap-6 md:p-6 md:max-w-7xl md:mx-auto md:min-h-screen md:pb-0">
           {/* Left: Preview (Fixed) */}
-          <div className="sticky top-6 h-fit">
-            {document && (
-              <DocumentPreview file={document.file} />
-            )}
+          <div className="sticky top-6 h-[calc(100vh-3rem)] overflow-hidden">
+            <div className="h-full overflow-y-auto rounded-xl border border-neutral-700 bg-neutral-800 p-3">
+              {document && (
+                <DocumentPreview file={document.file} />
+              )}
+            </div>
           </div>
 
           {/* Right: Configuration */}

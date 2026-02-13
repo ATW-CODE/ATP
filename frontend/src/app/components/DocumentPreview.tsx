@@ -51,7 +51,7 @@ export function DocumentPreview({ file }: DocumentPreviewProps) {
       </div>
 
       {/* PDF Preview */}
-      <div className="bg-neutral-100 rounded-xl overflow-hidden flex justify-center py-2 max-h-[60vh]">
+      <div className="bg-neutral-100 rounded-xl overflow-hidden flex justify-center py-2 max-h-[100vh]">
         <Document
           file={file}
           onLoadSuccess={({ numPages }) => setTotalPages(numPages)}

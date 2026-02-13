@@ -263,9 +263,9 @@ export function PrintConfiguration({
           className="w-full p-3 border-2 border-neutral-200 rounded-lg focus:border-red-500 focus:outline-none bg-white"
         >
           <option value="A4">A4 (210 × 297 mm)</option>
-          <option value="Letter">Letter (8.5 × 11 in)</option>
-          <option value="Legal">Legal (8.5 × 14 in)</option>
-          <option value="A3">A3 (297 × 420 mm)</option>
+          <option value="Letter" disabled>Letter (8.5 × 11 in)</option>
+          <option value="Legal" disabled>Legal (8.5 × 14 in)</option>
+          <option value="A3" disabled>A3 (297 × 420 mm)</option>
         </select>
       </div>
     </div>

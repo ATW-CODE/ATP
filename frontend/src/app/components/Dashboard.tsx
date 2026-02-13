@@ -2,9 +2,11 @@ import { Printer, FileText, Clock, IndianRupee, TrendingUp, CheckCircle2, Layout
 import { Button } from '@/app/components/ui/button';
 import { Badge } from '@/app/components/ui/badge';
 import { motion } from 'motion/react';
+import { useEffect, useState } from "react";
 
 interface DashboardProps {
   onNewPrint: () => void;
+  onLogout: () => void;
   userName: string;
 }
 
@@ -27,85 +29,171 @@ interface PrinterStatus {
   queueCount: number;
 }
 
-// Mock data
-const mockPrintHistory: PrintJob[] = [
-  {
-    id: 'ATP846291',
-    fileName: 'Presentation_Final.pdf',
-    pages: 8,
-    copies: 2,
-    cost: 24,
-    status: 'completed',
-    timestamp: '2 hours ago',
-    printerLocation: 'Ground Floor - Counter 1',
-  },
-  {
-    id: 'ATP846145',
-    fileName: 'Resume_Updated.pdf',
-    pages: 2,
-    copies: 5,
-    cost: 15,
-    status: 'completed',
-    timestamp: '5 hours ago',
-    printerLocation: 'Ground Floor - Counter 2',
-  },
-  {
-    id: 'ATP845932',
-    fileName: 'Project_Report.docx',
-    pages: 15,
-    copies: 1,
-    cost: 23,
-    status: 'completed',
-    timestamp: 'Yesterday',
-    printerLocation: 'First Floor - Counter 3',
-  },
-  {
-    id: 'ATP845721',
-    fileName: 'Invoice_Jan2026.pdf',
-    pages: 3,
-    copies: 1,
-    cost: 5,
-    status: 'completed',
-    timestamp: '2 days ago',
-    printerLocation: 'Ground Floor - Counter 1',
-  },
-];
+// // Mock data
+// const mockPrintHistory: PrintJob[] = [
+//   {
+//     id: 'ATP846291',
+//     fileName: 'Presentation_Final.pdf',
+//     pages: 8,
+//     copies: 2,
+//     cost: 24,
+//     status: 'completed',
+//     timestamp: '2 hours ago',
+//     printerLocation: 'Ground Floor - Counter 1',
+//   },
+//   {
+//     id: 'ATP846145',
+//     fileName: 'Resume_Updated.pdf',
+//     pages: 2,
+//     copies: 5,
+//     cost: 15,
+//     status: 'completed',
+//     timestamp: '5 hours ago',
+//     printerLocation: 'Ground Floor - Counter 2',
+//   },
+//   {
+//     id: 'ATP845932',
+//     fileName: 'Project_Report.docx',
+//     pages: 15,
+//     copies: 1,
+//     cost: 23,
+//     status: 'completed',
+//     timestamp: 'Yesterday',
+//     printerLocation: 'First Floor - Counter 3',
+//   },
+//   {
+//     id: 'ATP845721',
+//     fileName: 'Invoice_Jan2026.pdf',
+//     pages: 3,
+//     copies: 1,
+//     cost: 5,
+//     status: 'completed',
+//     timestamp: '2 days ago',
+//     printerLocation: 'Ground Floor - Counter 1',
+//   },
+// ];
 
-const mockPrinters: PrinterStatus[] = [
-  {
-    id: '1',
-    name: 'HP LaserJet Pro',
-    location: 'Ground Floor - Counter 1',
-    status: 'online',
-    queueCount: 2,
-  },
-  {
-    id: '2',
-    name: 'Canon PIXMA Color',
-    location: 'Ground Floor - Counter 2',
-    status: 'online',
-    queueCount: 0,
-  },
-  {
-    id: '3',
-    name: 'Epson L3210',
-    location: 'First Floor - Counter 3',
-    status: 'busy',
-    queueCount: 5,
-  },
-  {
-    id: '4',
-    name: 'Brother HL-L2321D',
-    location: 'First Floor - Counter 4',
-    status: 'offline',
-    queueCount: 0,
-  },
-];
+// const mockPrinters: PrinterStatus[] = [
+//   {
+//     id: '1',
+//     name: 'HP LaserJet Pro',
+//     location: 'Ground Floor - Counter 1',
+//     status: 'online',
+//     queueCount: 2,
+//   },
+//   {
+//     id: '2',
+//     name: 'Canon PIXMA Color',
+//     location: 'Ground Floor - Counter 2',
+//     status: 'online',
+//     queueCount: 0,
+//   },
+//   {
+//     id: '3',
+//     name: 'Epson L3210',
+//     location: 'First Floor - Counter 3',
+//     status: 'busy',
+//     queueCount: 5,
+//   },
+//   {
+//     id: '4',
+//     name: 'Brother HL-L2321D',
+//     location: 'First Floor - Counter 4',
+//     status: 'offline',
+//     queueCount: 0,
+//   },
+// ];
 
-export function Dashboard({ onNewPrint, userName }: DashboardProps) {
-  const totalSpent = mockPrintHistory.reduce((sum, job) => sum + job.cost, 0);
-  const totalJobs = mockPrintHistory.length;
-  const totalPages = mockPrintHistory.reduce((sum, job) => sum + (job.pages * job.copies), 0);
+export function Dashboard({ onNewPrint, onLogout, userName }: DashboardProps) {
+
+  const [printHistory, setPrintHistory] = useState<PrintJob[]>([]);
+  const [printers, setPrinters] = useState<PrinterStatus[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem("atp_token");
+
+      /* Fetch jobs */
+      const jobsRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/print/jobs/mine`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const jobsData = await jobsRes.json();
+
+      if (!jobsRes.ok) throw new Error(jobsData.message);
+
+      /* Fetch printers */
+      const printerRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/printers`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      const printerData = await printerRes.json();
+
+      if (!printerRes.ok) throw new Error(printerData.message);
+
+      /* Map jobs */
+      const mappedJobs: PrintJob[] = jobsData.map((j: any) => ({
+        id: j.id,
+        fileName: j.original_filename,
+        pages: j.pages,
+        copies: j.copies,
+        cost: Number(j.cost),
+        status:
+          j.status === "completed"
+            ? "completed"
+            : j.status === "printing" || j.status === "processing"
+            ? "processing"
+            : "failed", 
+        timestamp: new Date(j.created_at).toLocaleString(),
+        printerLocation: j.printer_name,
+      }));
+
+      /* Map printers */
+      const mappedPrinters: PrinterStatus[] = printerData.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        location: p.location_name,
+        status: p.status,
+        queueCount: 0, // optional (add later from backend)
+      }));
+
+      setPrintHistory(mappedJobs);
+      setPrinters(mappedPrinters);
+
+    } catch (err) {
+      console.error("Dashboard load failed", err);
+      alert("Failed to load dashboard");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalSpent = printHistory.reduce((sum, job) => sum + job.cost, 0); 
+  const totalJobs = printHistory.length; 
+  const totalPages = printHistory.reduce((sum, job) => sum + (job.pages * job.copies), 0);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        Loading dashboard...
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-900 pb-8">
@@ -129,6 +217,13 @@ export function Dashboard({ onNewPrint, userName }: DashboardProps) {
             >
               <Upload className="w-5 h-5" />
               New Print Job
+            </Button>
+            <Button
+              onClick={onLogout}
+              className="
+                border border-neutral-600 text-neutral-700 bg-white hover:bg-red-50 hover:text-red-600 hover:bg-neutral-700 active:scale-95 transition-all duration-150"
+            >
+              Logout
             </Button>
           </div>
         </motion.div>
@@ -178,7 +273,7 @@ export function Dashboard({ onNewPrint, userName }: DashboardProps) {
               </div>
             </div>
             <p className="text-2xl font-bold text-neutral-900">
-              {mockPrinters.filter(p => p.status === 'online').length}
+              {printers.filter(p => p.status === 'online').length}
             </p>
             <p className="text-sm text-neutral-600">Printers Online</p>
           </div>
@@ -198,7 +293,7 @@ export function Dashboard({ onNewPrint, userName }: DashboardProps) {
             </div>
 
             <div className="space-y-4">
-              {mockPrintHistory.map((job, index) => (
+              {printHistory.slice(0,5).map((job, index) => (
                 <motion.div
                   key={job.id}
                   initial={{ opacity: 0, y: 10 }}
@@ -260,7 +355,7 @@ export function Dashboard({ onNewPrint, userName }: DashboardProps) {
             </div>
 
             <div className="space-y-4">
-              {mockPrinters.map((printer, index) => (
+              {printers.map((printer, index) => (
                 <motion.div
                   key={printer.id}
                   initial={{ opacity: 0, y: 10 }}

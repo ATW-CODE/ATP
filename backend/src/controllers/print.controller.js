@@ -1,14 +1,46 @@
 import { parse } from "dotenv";
 import pool from "../db/index.js";
 
-/**
- * POST /print/jobs
- * Create a new print job
- */
 
-/**
- * POST /print/quote
- */
+// Page range parser
+function parsePageRange(range, totalPages) {
+  if (!range || range === "all") {
+    return totalPages;
+  }
+
+  const pages = new Set();
+
+  const parts = range.split(",");
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+
+    if (trimmed.includes("-")) {
+      const [s, e] = trimmed.split("-");
+
+      const start = Number(s);
+      const end = Number(e);
+
+      if (isNaN(start) || isNaN(end)) continue;
+
+      for (let i = start; i <= end; i++) {
+        if (i >= 1 && i <= totalPages) {
+          pages.add(i);
+        }
+      }
+    } else {
+      const num = Number(trimmed);
+
+      if (!isNaN(num) && num >= 1 && num <= totalPages) {
+        pages.add(num);
+      }
+    }
+  }
+
+  return pages.size;
+}
+
+
 export const getQuote = async (req, res) => {
   try {
     const userId = req.user.sub;
@@ -61,52 +93,12 @@ export const getQuote = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
-
-// Page range parser
-function parsePageRange(range, totalPages) {
-  if (!range || range === "all") {
-    return totalPages;
-  }
-
-  const pages = new Set();
-
-  const parts = range.split(",");
-
-  for (const part of parts) {
-    const trimmed = part.trim();
-
-    if (trimmed.includes("-")) {
-      const [s, e] = trimmed.split("-");
-
-      const start = Number(s);
-      const end = Number(e);
-
-      if (isNaN(start) || isNaN(end)) continue;
-
-      for (let i = start; i <= end; i++) {
-        if (i >= 1 && i <= totalPages) {
-          pages.add(i);
-        }
-      }
-    } else {
-      const num = Number(trimmed);
-
-      if (!isNaN(num) && num >= 1 && num <= totalPages) {
-        pages.add(num);
-      }
-    }
-  }
-
-  return pages.size;
-}
-
       
 
 export const createPrintJob = async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { fileId, printerId, copies = 1, colorMode, pageRange = "all" } = req.body;
+    const { fileId, printerId, copies = 1, colorMode = "bw", pageRange = "all", orientation = "portrait" } = req.body;
 
     if (!fileId || !printerId) {
       return res.status(400).json({ message: "fileId and printerId are required", });
@@ -144,6 +136,12 @@ export const createPrintJob = async (req, res) => {
       });
     }
 
+    if (!["portrait", "landscape"].includes(orientation)) {
+      return res.status(400).json({
+        message: "Invalid orientation value",
+      });
+    }
+
     const totalPages = fileResult.rows[0]?.total_pages;
 
     if (!totalPages) {
@@ -156,12 +154,6 @@ export const createPrintJob = async (req, res) => {
 
     const cost = Math.round(selectedPages * copies * rate);
 
-    // // Pricing logic (temporary)
-    // const pages = 10; // placeholder until file processing exists
-    // const costPerPage = color ? 5 : 2;
-    // const cost = pages * copies * costPerPage;
-
-    // Insert print job
     const result = await pool.query(
       `
       INSERT INTO print_jobs (
@@ -173,13 +165,16 @@ export const createPrintJob = async (req, res) => {
         color,
         page_range,
         pages,
-        cost
+        cost,
+        orientation
       )
-      VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8)
+      VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8, $9)
       RETURNING *
       `,
-      [userId, fileId, printerId, copies, colorMode, pageRange, selectedPages, cost]
+      [userId, fileId, printerId, copies, colorMode, pageRange, selectedPages, cost, orientation]
     );
+
+
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -199,17 +194,19 @@ export const getMyPrintJobs = async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        id,
-        status,
-        copies,
-        color,
-        pages,
-        cost,
-        created_at,
-        updated_at
-      FROM print_jobs
-      WHERE user_id = $1
-      ORDER BY created_at DESC
+        pj.id,
+        f.original_filename,
+        p.name AS printer_name,
+        pj.pages,
+        pj.copies,
+        pj.cost,
+        pj.status,
+        pj.created_at
+      FROM print_jobs pj
+      JOIN files f ON pj.file_id = f.id
+      JOIN printers p ON pj.printer_id = p.id
+      WHERE pj.user_id = $1
+      ORDER BY pj.created_at DESC
       `,
       [userId]
     );

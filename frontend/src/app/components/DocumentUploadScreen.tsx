@@ -77,7 +77,7 @@ export function DocumentUploadScreen({
           <Button
             onClick={onDashboardClick}
             variant="outline"
-            className="border-neutral-700 text-neutral-300 hover:text-white hover:border-white flex items-center gap-2"
+            className="bg-neutral-800 text-white border border-neutral-600 hover:bg-neutral-700 flex items-center gap-2"
           >
             <LayoutGrid className="w-4 h-4" />
             Dashboard

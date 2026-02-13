@@ -91,7 +91,7 @@ export const getActivePrinterJobs = async (req, res) => {
 
     const result = await pool.query(
       `
-      SELECT id, file_id, copies, pages, cost, status,
+      SELECT id, file_id, copies, pages, cost, status, orientation, color, page_range
       FROM print_jobs
       WHERE printer_id = $1
         AND status = 'printing'
