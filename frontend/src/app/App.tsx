@@ -238,15 +238,6 @@ export default function App() {
 
   const handlePayClick = async () => {
     try {
-      console.log("Creating job with:", {
-        fileId: document?.fileId,
-        printerId: selectedPrinter,
-        pageRange,
-        orientation,
-        copies,
-        colorMode,
-      });
-
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/print/jobs`,
         {
@@ -266,19 +257,17 @@ export default function App() {
         }
       );
 
-      console.log("Sending Orientation:", orientation);
-
       const data = await res.json();
-
-      console.log("Print job response:", data);
+      
+      setJobId(data.id);
+      console.log("Print job created with ID:", data.id);
+      setStage('processing');
 
       if (!res.ok) {
         throw new Error(data.message);
       }
 
       console.log("Print job created:", data);
-
-      setShowPaymentModal(true);
 
     } catch (err) {
       console.error("Job creation failed:", err);
@@ -367,7 +356,7 @@ export default function App() {
 
   // Processing Stage
   if (stage === 'processing') {
-    return <ProcessingScreen onComplete={handleProcessingComplete} />;
+    return <ProcessingScreen jobId={jobId} onComplete={handleProcessingComplete} />;
   }
 
   // Success Stage

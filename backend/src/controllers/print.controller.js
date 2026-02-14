@@ -280,3 +280,29 @@ export const updatePrintJobStatus = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getPrintJobStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.sub;
+
+    const result = await pool.query(
+      `
+      SELECT status
+      FROM print_jobs
+      WHERE id = $1 AND user_id = $2
+      `,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Print job not found" });
+    }
+
+    res.json({ status: result.rows[0].status });
+
+  } catch (err) {
+    console.error("Get print job status error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

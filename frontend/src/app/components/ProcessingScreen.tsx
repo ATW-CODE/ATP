@@ -3,27 +3,69 @@ import { motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 
 interface ProcessingScreenProps {
+  jobId: string;
   onComplete: () => void;
 }
 
 type ProcessingStage = 'payment' | 'sending' | 'printing' | 'complete';
 
-export function ProcessingScreen({ onComplete }: ProcessingScreenProps) {
+export function ProcessingScreen({ jobId, onComplete }: ProcessingScreenProps) {
   const [stage, setStage] = useState<ProcessingStage>('payment');
 
   useEffect(() => {
-    const timer1 = setTimeout(() => setStage('sending'), 1500);
-    const timer2 = setTimeout(() => setStage('printing'), 3000);
-    const timer3 = setTimeout(() => setStage('complete'), 5000);
-    const timer4 = setTimeout(() => onComplete(), 6500);
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/print/jobs/${jobId}/fetchStatus`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+          },
+        }
+      );
 
-    return () => {
-      clearTimeout(timer1);
-      clearTimeout(timer2);
-      clearTimeout(timer3);
-      clearTimeout(timer4);
-    };
-  }, [onComplete]);
+      console.log("Fetching status for job ID:", jobId);
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message);
+      }
+
+      const backendStatus = data.status;
+
+      // Map backend → UI stage
+      const statusMap: Record<string, ProcessingStage> = {
+        uploaded: "payment",
+        queued: "sending",
+        printing: "printing",
+        completed: "complete",
+      };
+
+      const newStage = statusMap[backendStatus];
+      
+      console.log("Backend status:", backendStatus);
+      
+      if (newStage) {
+        setStage(newStage);
+      }
+
+      if (backendStatus === "completed") {
+        onComplete();
+      }
+
+    } catch (err) {
+      console.error("Status polling error:", err);
+    }
+  };
+
+  fetchStatus();
+
+  const interval = setInterval(fetchStatus, 3000);
+
+  return () => clearInterval(interval);
+
+}, [jobId, onComplete]);
+
 
   const stages = [
     { id: 'payment', label: 'Payment Confirmed', icon: CheckCircle2, color: 'text-green-500' },
