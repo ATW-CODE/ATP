@@ -22,3 +22,17 @@ Thumbs.db
 test.pdf
 
 backend/uploads/
+backend/razorpay_secrets.txt
+
+dirMap.txt
+Manual.txt
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Kiosk Agent later to be stored in .env
+kiosk-agent/config.py
+
+scripts

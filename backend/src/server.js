@@ -12,7 +12,7 @@ const startServer = async () => {
     await pool.query('SELECT 1');
     console.log('Database check passed');
 
-    app.listen(PORT, () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server is running on port ${PORT}`);
     });
   } catch (err) {

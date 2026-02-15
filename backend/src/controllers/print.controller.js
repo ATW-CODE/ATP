@@ -1,13 +1,104 @@
+import { parse } from "dotenv";
 import pool from "../db/index.js";
 
-/**
- * POST /print/jobs
- * Create a new print job
- */
+
+// Page range parser
+function parsePageRange(range, totalPages) {
+  if (!range || range === "all") {
+    return totalPages;
+  }
+
+  const pages = new Set();
+
+  const parts = range.split(",");
+
+  for (const part of parts) {
+    const trimmed = part.trim();
+
+    if (trimmed.includes("-")) {
+      const [s, e] = trimmed.split("-");
+
+      const start = Number(s);
+      const end = Number(e);
+
+      if (isNaN(start) || isNaN(end)) continue;
+
+      for (let i = start; i <= end; i++) {
+        if (i >= 1 && i <= totalPages) {
+          pages.add(i);
+        }
+      }
+    } else {
+      const num = Number(trimmed);
+
+      if (!isNaN(num) && num >= 1 && num <= totalPages) {
+        pages.add(num);
+      }
+    }
+  }
+
+  return pages.size;
+}
+
+
+export const getQuote = async (req, res) => {
+  try {
+    const userId = req.user.sub;
+
+    const {
+      fileId,
+      copies,
+      color,
+      pageRange,
+      paperSize,
+    } = req.body;
+
+    if (!fileId || !copies) {
+      return res.status(400).json({ message: "Invalid request" });
+    }
+
+    // Get file info
+    const result = await pool.query(
+      `
+      SELECT total_pages
+      FROM files
+      WHERE id = $1 AND user_id = $2
+      `,
+      [fileId, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "File not found" });
+    }
+
+    const totalPages = result.rows[0].total_pages || 0;
+
+    // Parse page range
+    const selectedPages = parsePageRange(pageRange, totalPages);
+
+    // Pricing rules
+    const basePerPage = color ? 5 : 2;
+
+    const amount = Math.round(selectedPages * copies * basePerPage);
+
+    res.json({
+      pages: selectedPages,
+      copies,
+      rate: basePerPage,
+      total: amount,
+    });
+
+  } catch (err) {
+    console.error("Quote error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+      
+
 export const createPrintJob = async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { fileId, printerId, copies = 1, color = false } = req.body;
+    const { fileId, printerId, copies = 1, color = false, pageRange = "all", orientation = "portrait" } = req.body;
 
     if (!fileId || !printerId) {
       return res.status(400).json({ message: "fileId and printerId are required", });
@@ -16,7 +107,9 @@ export const createPrintJob = async (req, res) => {
     // Verify file belongs to user
     const fileResult = await pool.query(
       `
-      SELECT id
+      SELECT 
+        id, 
+        total_pages
       FROM files
       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL AND expires_at > now()
       `,
@@ -43,12 +136,24 @@ export const createPrintJob = async (req, res) => {
       });
     }
 
-    // Pricing logic (temporary)
-    const pages = 10; // placeholder until file processing exists
-    const costPerPage = color ? 5 : 2;
-    const cost = pages * copies * costPerPage;
+    if (!["portrait", "landscape"].includes(orientation)) {
+      return res.status(400).json({
+        message: "Invalid orientation value",
+      });
+    }
 
-    // Insert print job
+    const totalPages = fileResult.rows[0]?.total_pages;
+
+    if (!totalPages) {
+      return res.status(400).json({ message: "File page count missing." });
+    }
+
+    const selectedPages = parsePageRange(pageRange, totalPages);
+
+    const rate = color ? 5 : 2;
+
+    const cost = Math.round(selectedPages * copies * rate);
+
     const result = await pool.query(
       `
       INSERT INTO print_jobs (
@@ -58,14 +163,18 @@ export const createPrintJob = async (req, res) => {
         status,
         copies,
         color,
+        page_range,
         pages,
-        cost
+        cost,
+        orientation
       )
-      VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7)
+      VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8, $9)
       RETURNING *
       `,
-      [userId, fileId, printerId, copies, color, pages, cost]
+      [userId, fileId, printerId, copies, color, pageRange, selectedPages, cost, orientation]
     );
+
+
 
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -85,17 +194,19 @@ export const getMyPrintJobs = async (req, res) => {
     const result = await pool.query(
       `
       SELECT
-        id,
-        status,
-        copies,
-        color,
-        pages,
-        cost,
-        created_at,
-        updated_at
-      FROM print_jobs
-      WHERE user_id = $1
-      ORDER BY created_at DESC
+        pj.id,
+        f.original_filename,
+        p.name AS printer_name,
+        pj.pages,
+        pj.copies,
+        pj.cost,
+        pj.status,
+        pj.created_at
+      FROM print_jobs pj
+      JOIN files f ON pj.file_id = f.id
+      JOIN printers p ON pj.printer_id = p.id
+      WHERE pj.user_id = $1
+      ORDER BY pj.created_at DESC
       `,
       [userId]
     );
@@ -166,6 +277,32 @@ export const updatePrintJobStatus = async (req, res) => {
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Update print job status error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+export const getPrintJobStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.sub;
+
+    const result = await pool.query(
+      `
+      SELECT status
+      FROM print_jobs
+      WHERE id = $1 AND user_id = $2
+      `,
+      [id, userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Print job not found" });
+    }
+
+    res.json({ status: result.rows[0].status });
+
+  } catch (err) {
+    console.error("Get print job status error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };

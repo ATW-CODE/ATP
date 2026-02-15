@@ -1,96 +1,58 @@
-// backend/src/controllers/payment.controller.js
 import crypto from "crypto";
+import razorpay from "../utils/razorpay.js";
 import pool from "../db/index.js";
-import { razorpay } from "../config/razorpay.js";
 
-export const paymentWebhook = async (req, res) => {
-  const signature = req.headers["x-razorpay-signature"];
+export const createOrder = async (req, res) => {
+  try {
+    const { jobId } = req.body;
 
-  const expected = crypto
-    .createHmac("sha256", process.env.RAZORPAY_WEBHOOK_SECRET)
-    .update(req.body)
-    .digest("hex");
-
-  if (signature !== expected) {
-    return res.status(400).send("Invalid signature");
-  }
-
-  const event = JSON.parse(req.body.toString());
-
-  if (event.event === "payment.captured") {
-    const payment = event.payload.payment.entity;
-    const orderId = payment.order_id;
-
-    await pool.query("BEGIN");
-
-    await pool.query(
-      `
-      UPDATE payments
-      SET status='success',
-          provider_payment_id=$1
-      WHERE provider_order_id=$2
-      `,
-      [payment.id, orderId]
+    const jobResult = await pool.query(
+      `SELECT cost FROM print_jobs WHERE id = $1`,
+      [jobId]
     );
 
-    await pool.query(
-      `
-      UPDATE print_jobs
-      SET payment_status='paid',
-          paid_at=now()
-      WHERE id = (
-        SELECT print_job_id
-        FROM payments
-        WHERE provider_order_id=$1
-      )
-      `,
-      [orderId]
-    );
+    if (jobResult.rows.length === 0) {
+      return res.status(404).json({ message: "Job not found" });
+    }
 
-    await pool.query("COMMIT");
+    const amount = jobResult.rows[0].cost * 100; // Razorpay uses paise
+
+    const order = await razorpay.orders.create({
+      amount,
+      currency: "INR",
+      receipt: `ATP_${jobId.slice(0, 12)}`
+    });
+
+    res.json(order);
+  } catch (err) {
+    console.error("Create order error:", err);
+    res.status(500).json({ message: "Server error" });
   }
-
-  res.json({ ok: true });
 };
 
+export const verifyPayment = async (req, res) => {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, jobId } = req.body;
 
-export const createPayment = async (req, res) => {
-  const userId = req.user.sub;
-  const { printJobId } = req.body;
+    const body = razorpay_order_id + "|" + razorpay_payment_id;
 
-  const job = await pool.query(
-    `SELECT cost FROM print_jobs WHERE id=$1 AND user_id=$2`,
-    [printJobId, userId]
-  );
+    const expectedSignature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(body.toString())
+      .digest("hex");
 
-  if (!job.rows.length) {
-    return res.status(404).json({ message: "Job not found" });
+    if (expectedSignature !== razorpay_signature) {
+      return res.status(400).json({ message: "Invalid signature" });
+    }
+
+    await pool.query(
+      `UPDATE print_jobs SET payment_status = 'paid' WHERE id = $1`,
+      [jobId]
+    );
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error("Payment verify error:", err);
+    res.status(500).json({ message: "Server error" });
   }
-
-  const order = await razorpay.orders.create({
-    amount: job.rows[0].cost * 100,
-    currency: "INR",
-    receipt: printJobId,
-  });
-
-  await pool.query(
-    `
-    INSERT INTO payments (
-      user_id,
-      print_job_id,
-      provider,
-      provider_order_id,
-      amount,
-      status
-    )
-    VALUES ($1,$2,'razorpay',$3,$4,'created')
-    `,
-    [userId, printJobId, order.id, job.rows[0].cost]
-  );
-
-  res.json({
-    key: process.env.RAZORPAY_KEY_ID,
-    orderId: order.id,
-    amount: order.amount,
-  });
 };

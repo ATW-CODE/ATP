@@ -1,4 +1,18 @@
 import pool from "../db/index.js";
+import fs from "fs";
+import { PDFDocument } from "pdf-lib";
+
+// import * as pdfParse from "pdf-parse";
+
+
+// import { createRequire } from "module";
+// const require = createRequire(import.meta.url);
+
+// const pdfParse = require("pdf-parse");
+
+// import pdfParsePkg from "pdf-parse";
+
+// const pdfParse = pdfParsePkg.default || pdfParsePkg;
 
 export const uploadFile = async (req, res) => {
   try {
@@ -8,9 +22,22 @@ export const uploadFile = async (req, res) => {
       return res.status(400).json({ message: "File is requirred" });
     }
 
-    const { originalname, mimetype, size, filename } = req.file;
+    const { originalname, mimetype, size, filename, path } = req.file;
 
-    const storagePath = `uploads/${filename}`;
+    const storagePath = path;
+
+    let totalPages = null;
+
+    if (mimetype === "application/pdf") {
+      try {
+        const buffer = fs.readFileSync(path);
+        const pdfDoc = await PDFDocument.load(buffer);
+        totalPages = pdfDoc.getPageCount();
+      } catch (e) {
+        console.error("PDF parse failed:", e);
+        totalPages = null;
+      }
+    }
 
     const result = await pool.query(
       `
@@ -20,11 +47,12 @@ export const uploadFile = async (req, res) => {
         storage_path,
         file_type,
         file_size,
+        total_pages,
         expires_at
-      ) VALUES ($1, $2, $3, $4, $5, now() + interval '24 hours')
-      RETURNING id, original_filename, expires_at;
+      ) VALUES ($1, $2, $3, $4, $5, $6, now() + interval '24 hours')
+      RETURNING id, original_filename, total_pages, expires_at;
       `,
-      [userId, originalname, storagePath, mimetype, size]
+      [userId, originalname, storagePath, mimetype, size, totalPages]
     );
     res.status(201).json({ file: result.rows[0] });
   } catch (err) {
