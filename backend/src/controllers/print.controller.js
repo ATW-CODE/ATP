@@ -48,7 +48,7 @@ export const getQuote = async (req, res) => {
     const {
       fileId,
       copies,
-      colorMode,
+      color,
       pageRange,
       paperSize,
     } = req.body;
@@ -77,7 +77,7 @@ export const getQuote = async (req, res) => {
     const selectedPages = parsePageRange(pageRange, totalPages);
 
     // Pricing rules
-    const basePerPage = colorMode === "color" ? 5 : 2;
+    const basePerPage = color ? 5 : 2;
 
     const amount = Math.round(selectedPages * copies * basePerPage);
 
@@ -98,7 +98,7 @@ export const getQuote = async (req, res) => {
 export const createPrintJob = async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { fileId, printerId, copies = 1, colorMode = "bw", pageRange = "all", orientation = "portrait" } = req.body;
+    const { fileId, printerId, copies = 1, color = false, pageRange = "all", orientation = "portrait" } = req.body;
 
     if (!fileId || !printerId) {
       return res.status(400).json({ message: "fileId and printerId are required", });
@@ -150,7 +150,7 @@ export const createPrintJob = async (req, res) => {
 
     const selectedPages = parsePageRange(pageRange, totalPages);
 
-    const rate = colorMode === "color" ? 5 : 2;
+    const rate = color ? 5 : 2;
 
     const cost = Math.round(selectedPages * copies * rate);
 
@@ -171,7 +171,7 @@ export const createPrintJob = async (req, res) => {
       VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8, $9)
       RETURNING *
       `,
-      [userId, fileId, printerId, copies, colorMode, pageRange, selectedPages, cost, orientation]
+      [userId, fileId, printerId, copies, color, pageRange, selectedPages, cost, orientation]
     );
 
 

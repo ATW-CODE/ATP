@@ -211,7 +211,7 @@ export default function App() {
           body: JSON.stringify({
             fileId: document.fileId,
             copies,
-            colorMode,     // backend will convert later
+            color: colorMode === "color",
             pageRange,
           }),
         }
@@ -238,6 +238,7 @@ export default function App() {
 
   const handlePayClick = async () => {
     try {
+      // 1️⃣ Create Print Job
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/print/jobs`,
         {
@@ -250,30 +251,94 @@ export default function App() {
             fileId: document?.fileId,
             printerId: selectedPrinter,
             pageRange,
-            orientation: orientation,
+            orientation,
             copies,
-            colorMode: colorMode === "color",
+            color: colorMode === "color",
           }),
         }
       );
 
-      const data = await res.json();
-      
-      setJobId(data.id);
-      console.log("Print job created with ID:", data.id);
-      setStage('processing');
+      const jobData = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message);
+        throw new Error(jobData.message);
       }
 
-      console.log("Print job created:", data);
+      console.log("Print job created:", jobData);
+
+      setJobId(jobData.id);
+
+      // 2️⃣ Create Razorpay Order
+      const orderRes = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/payments/create-order`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+          },
+          body: JSON.stringify({ jobId: jobData.id }),
+        }
+      );
+
+      const order = await orderRes.json();
+
+      if (!orderRes.ok) {
+        throw new Error(order.message);
+      }
+
+      // 3️⃣ Razorpay Options
+      const options = {
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+        amount: order.amount,
+        currency: order.currency,
+        name: "ATP Print Kiosk",
+        description: "Print Payment",
+        order_id: order.id,
+        handler: async function (response: any) {
+
+          // 4️⃣ Verify Payment
+          const verifyRes = await fetch(
+            `${import.meta.env.VITE_API_BASE_URL}/payments/verify`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("atp_token")}`,
+              },
+              body: JSON.stringify({
+                ...response,
+                jobId: jobData.id,
+              }),
+            }
+          );
+
+          const verifyData = await verifyRes.json();
+
+          if (!verifyRes.ok) {
+            alert("Payment verification failed");
+            return;
+          }
+
+          console.log("Payment verified:", verifyData);
+
+          // ✅ ONLY NOW move to processing screen
+          setStage("processing");
+        },
+        theme: {
+          color: "#ef4444",
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
 
     } catch (err) {
-      console.error("Job creation failed:", err);
-      alert("Failed to create print job");
+      console.error("Payment flow error:", err);
+      alert("Payment failed");
     }
   };
+
 
   const handlePaymentSuccess = () => {
     setShowPaymentModal(false);
