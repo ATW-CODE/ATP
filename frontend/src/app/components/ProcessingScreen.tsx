@@ -24,7 +24,6 @@ export function ProcessingScreen({ jobId, onComplete }: ProcessingScreenProps) {
         }
       );
 
-      console.log("Fetching status for job ID:", jobId);
       const data = await res.json();
 
       if (!res.ok) {
@@ -42,8 +41,6 @@ export function ProcessingScreen({ jobId, onComplete }: ProcessingScreenProps) {
       };
 
       const newStage = statusMap[backendStatus];
-      
-      console.log("Backend status:", backendStatus);
       
       if (newStage) {
         setStage(newStage);

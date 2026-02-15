@@ -33,7 +33,6 @@ export const uploadFile = async (req, res) => {
         const buffer = fs.readFileSync(path);
         const pdfDoc = await PDFDocument.load(buffer);
         totalPages = pdfDoc.getPageCount();
-        console.log(`PDF has ${totalPages} pages.`);
       } catch (e) {
         console.error("PDF parse failed:", e);
         totalPages = null;
