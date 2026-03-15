@@ -98,7 +98,7 @@ export const getQuote = async (req, res) => {
 export const createPrintJob = async (req, res) => {
   try {
     const userId = req.user.sub;
-    const { fileId, printerId, copies = 1, color = false, pageRange = "all", orientation = "portrait" } = req.body;
+    const { fileId, printerId, copies = 1, duplex, color = false, pageRange = "all", orientation = "portrait" } = req.body;
 
     if (!fileId || !printerId) {
       return res.status(400).json({ message: "fileId and printerId are required", });
@@ -154,6 +154,8 @@ export const createPrintJob = async (req, res) => {
 
     const cost = Math.round(selectedPages * copies * rate);
 
+    console.log("Incoming duplex:", duplex);
+
     const result = await pool.query(
       `
       INSERT INTO print_jobs (
@@ -162,16 +164,17 @@ export const createPrintJob = async (req, res) => {
         printer_id,
         status,
         copies,
+        duplex,
         color,
         page_range,
         pages,
         cost,
         orientation
       )
-      VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8, $9)
+      VALUES ($1, $2, $3, 'uploaded', $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
       `,
-      [userId, fileId, printerId, copies, color, pageRange, selectedPages, cost, orientation]
+      [userId, fileId, printerId, copies, duplex, color, pageRange, selectedPages, cost, orientation]
     );
 
 

@@ -20,6 +20,8 @@ interface PrintConfigurationProps {
   onOrientationChange: (orientation: 'portrait' | 'landscape') => void;
   pageRange: string;
   onPageRangeChange: (range: string) => void;
+  duplex: boolean;
+  onDuplexChange: (value: boolean) => void;
   colorMode: 'bw' | 'color';
   onColorModeChange: (mode: 'bw' | 'color') => void;
   paperSize: string;
@@ -37,6 +39,8 @@ export function PrintConfiguration({
   pageRange,
   onPageRangeChange,
   colorMode,
+  duplex,
+  onDuplexChange,
   onColorModeChange,
   paperSize,
   onPaperSizeChange,
@@ -200,6 +204,53 @@ export function PrintConfiguration({
             <p className="mt-2 text-xs text-neutral-500">Enter page numbers or ranges (e.g., 1-3, 6)</p>
           </div>
         )}
+      </div>
+
+      {/* Duplex Printing */}
+      <div className="bg-white rounded-xl shadow-md p-4">
+        <label className="flex items-center gap-2 text-sm font-medium text-neutral-700 mb-3">
+          <FileText className="w-4 h-4" />
+          Duplex Printing
+        </label>
+
+        <div className="grid grid-cols-2 gap-3">
+
+          {/* Single Sided */}
+          <button
+            onClick={() => onDuplexChange(false)}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              !duplex
+                ? 'border-red-500 bg-red-50'
+                : 'border-neutral-200 hover:border-red-300'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-5 h-6 bg-neutral-400 rounded-sm"></div>
+              </div>
+              <span className="text-sm font-medium">Single-sided</span>
+            </div>
+          </button>
+
+          {/* Double Sided */}
+          <button
+            onClick={() => onDuplexChange(true)}
+            className={`p-4 rounded-lg border-2 transition-all ${
+              duplex
+                ? 'border-red-500 bg-red-50'
+                : 'border-neutral-200 hover:border-red-300'
+            }`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className="flex gap-1">
+                <div className="w-5 h-6 bg-neutral-400 rounded-sm"></div>
+                <div className="w-5 h-6 bg-neutral-400 rounded-sm -ml-2 opacity-70"></div>
+              </div>
+              <span className="text-sm font-medium">Double-sided</span>
+            </div>
+          </button>
+
+        </div>
       </div>
 
       {/* Color Mode */}

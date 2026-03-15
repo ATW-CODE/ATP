@@ -29,81 +29,6 @@ interface PrinterStatus {
   queueCount: number;
 }
 
-// // Mock data
-// const mockPrintHistory: PrintJob[] = [
-//   {
-//     id: 'ATP846291',
-//     fileName: 'Presentation_Final.pdf',
-//     pages: 8,
-//     copies: 2,
-//     cost: 24,
-//     status: 'completed',
-//     timestamp: '2 hours ago',
-//     printerLocation: 'Ground Floor - Counter 1',
-//   },
-//   {
-//     id: 'ATP846145',
-//     fileName: 'Resume_Updated.pdf',
-//     pages: 2,
-//     copies: 5,
-//     cost: 15,
-//     status: 'completed',
-//     timestamp: '5 hours ago',
-//     printerLocation: 'Ground Floor - Counter 2',
-//   },
-//   {
-//     id: 'ATP845932',
-//     fileName: 'Project_Report.docx',
-//     pages: 15,
-//     copies: 1,
-//     cost: 23,
-//     status: 'completed',
-//     timestamp: 'Yesterday',
-//     printerLocation: 'First Floor - Counter 3',
-//   },
-//   {
-//     id: 'ATP845721',
-//     fileName: 'Invoice_Jan2026.pdf',
-//     pages: 3,
-//     copies: 1,
-//     cost: 5,
-//     status: 'completed',
-//     timestamp: '2 days ago',
-//     printerLocation: 'Ground Floor - Counter 1',
-//   },
-// ];
-
-// const mockPrinters: PrinterStatus[] = [
-//   {
-//     id: '1',
-//     name: 'HP LaserJet Pro',
-//     location: 'Ground Floor - Counter 1',
-//     status: 'online',
-//     queueCount: 2,
-//   },
-//   {
-//     id: '2',
-//     name: 'Canon PIXMA Color',
-//     location: 'Ground Floor - Counter 2',
-//     status: 'online',
-//     queueCount: 0,
-//   },
-//   {
-//     id: '3',
-//     name: 'Epson L3210',
-//     location: 'First Floor - Counter 3',
-//     status: 'busy',
-//     queueCount: 5,
-//   },
-//   {
-//     id: '4',
-//     name: 'Brother HL-L2321D',
-//     location: 'First Floor - Counter 4',
-//     status: 'offline',
-//     queueCount: 0,
-//   },
-// ];
-
 export function Dashboard({ onNewPrint, onLogout, userName }: DashboardProps) {
 
   const [printHistory, setPrintHistory] = useState<PrintJob[]>([]);
@@ -233,7 +158,7 @@ export function Dashboard({ onNewPrint, onLogout, userName }: DashboardProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8"
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
         >
           <div className="bg-white rounded-xl shadow-md p-6">
             <div className="flex items-center justify-between mb-2">
@@ -299,9 +224,10 @@ export function Dashboard({ onNewPrint, onLogout, userName }: DashboardProps) {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.3 + index * 0.1 }}
-                  className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:border-red-300 transition-colors"
+                  // className="flex items-center justify-between p-4 border border-neutral-200 rounded-lg hover:border-red-300 transition-colors"
+                  className='flex flex-col md:flex-row md:items-center md:justify-between p-4 border border-neutral-200 rounded-lg hover:border-red-300 transition-colors gap-3'
                 >
-                  <div className="flex items-start gap-4 flex-1">
+                  <div className="flex items-start gap-3 flex-1">
                     <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
                       <FileText className="w-5 h-5 text-neutral-600" />
                     </div>
@@ -320,13 +246,14 @@ export function Dashboard({ onNewPrint, onLogout, userName }: DashboardProps) {
                         {job.pages} pages × {job.copies} {job.copies === 1 ? 'copy' : 'copies'}
                       </p>
                       <div className="flex items-center gap-3 text-xs text-neutral-500">
-                        <span>Job ID: {job.id}</span>
+                        <span className='truncate max-w-[140px]'>Job ID: {job.id}</span>
                         <span>•</span>
                         <span>{job.printerLocation}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-right ml-4 flex-shrink-0">
+                  <div className="flex md:block justify-between md:text-right text-sm md:ml-4">
+                  {/* <div className="text-right ml-4 flex-shrink-0"> */}
                     <p className="font-bold text-neutral-900">₹{job.cost}</p>
                     <p className="text-xs text-neutral-500">{job.timestamp}</p>
                   </div>

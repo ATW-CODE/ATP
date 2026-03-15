@@ -38,6 +38,7 @@ export default function App() {
   const [copies, setCopies] = useState(1);
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [pageRange, setPageRange] = useState('all');
+  const [duplex, setDuplex] = useState(false);
   const [colorMode, setColorMode] = useState<'bw' | 'color'>('bw');
   const [paperSize, setPaperSize] = useState('A4');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -234,10 +235,21 @@ export default function App() {
 
   useEffect(() => {
     fetchQuote();
-  }, [document, copies, colorMode, pageRange, selectedPrinter]);
+  }, [document, copies, duplex, colorMode, pageRange, selectedPrinter]);
 
   const handlePayClick = async () => {
     try {
+      console.log(duplex);
+
+      console.log("Request payload:", {
+        fileId: document?.fileId,
+        printerId: selectedPrinter,
+        pageRange,
+        orientation,
+        copies,
+        duplex,
+        color: colorMode === "color",
+      });
       // 1️⃣ Create Print Job
       const res = await fetch(
         `${import.meta.env.VITE_API_BASE_URL}/print/jobs`,
@@ -253,6 +265,7 @@ export default function App() {
             pageRange,
             orientation,
             copies,
+            duplex,
             color: colorMode === "color",
           }),
         }
@@ -478,6 +491,8 @@ export default function App() {
               onOrientationChange={setOrientation}
               pageRange={pageRange}
               onPageRangeChange={setPageRange}
+              duplex={duplex}
+              onDuplexChange={setDuplex}
               colorMode={colorMode}
               onColorModeChange={setColorMode}
               paperSize={paperSize}
@@ -543,6 +558,8 @@ export default function App() {
               onOrientationChange={setOrientation}
               pageRange={pageRange}
               onPageRangeChange={setPageRange}
+              duplex={duplex}
+              onDuplexChange={setDuplex}
               colorMode={colorMode}
               onColorModeChange={setColorMode}
               paperSize={paperSize}
