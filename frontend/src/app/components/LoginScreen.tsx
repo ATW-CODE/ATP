@@ -33,6 +33,7 @@ export function LoginScreen({ onLogin }: LoginScreenProps) {
       }
 
       localStorage.setItem("atp_token", data.token);
+      localStorage.setItem("atp_user_name", data.user.name);
       onLogin();
     } catch (err) {
       console.error("Login error:", err);

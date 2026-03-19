@@ -10,6 +10,7 @@ const upload = multer({ dest: "uploads/" });
 router.post("/", authenticate, upload.single("file"), uploadFile);
 router.get("/mine", authenticate, getMyFiles);
 router.get("/expired", authenticate, getExpiredFiles);
-router.get("/:id", authenticate, downloadFile);
+router.get("/:id", downloadFile);
+// router.get("/:id", authenticate, downloadFile);
 
 export default router;

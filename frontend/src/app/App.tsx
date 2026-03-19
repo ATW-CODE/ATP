@@ -47,13 +47,18 @@ export default function App() {
   const [loadingPrinters, setLoadingPrinters] = useState(true);
   const [quote, setQuote] = useState<number | null>(null);
   const [loadingQuote, setLoadingQuote] = useState(false);
+  const [userName, setUserName] = useState('User');
 
   useEffect(() => {
     const token = localStorage.getItem("atp_token");
-
+    const name = localStorage.getItem("atp_user_name");
     if (token) {
       setIsAuthenticated(true);
+    };
+    if (name) {
+      setUserName(name);
     }
+
   }, []);
 
   const handleFileSelect = async (file: File) => {
@@ -391,6 +396,8 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    // Clear user info
+    localStorage.removeItem("atp_user_name");
     // Remove token
     localStorage.removeItem("atp_token");
 
@@ -422,7 +429,7 @@ export default function App() {
 
   // Dashboard Stage
   if (stage === 'dashboard') {
-    return <Dashboard onNewPrint={handleGoToUpload} onLogout={handleLogout} userName="User" />;
+    return <Dashboard onNewPrint={handleGoToUpload} onLogout={handleLogout} userName={userName} />;
   }
 
 

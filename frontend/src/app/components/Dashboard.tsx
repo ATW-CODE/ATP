@@ -42,6 +42,7 @@ export function Dashboard({ onNewPrint, onLogout, userName }: DashboardProps) {
   const fetchDashboardData = async () => {
     try {
       const token = localStorage.getItem("atp_token");
+      const userName = localStorage.getItem("atp_user_name") || "User";
 
       /* Fetch jobs */
       const jobsRes = await fetch(

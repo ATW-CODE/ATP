@@ -64,17 +64,33 @@ export const uploadFile = async (req, res) => {
 
 export const downloadFile = async (req, res) => {
   try {
-    const userId = req.user.sub;
     const { id } = req.params;
 
-    const result = await pool.query(
-      `
-      SELECT original_filename, storage_path, expires_at, is_deleted
-      FROM files
-      WHERE id = $1 AND user_id = $2
-      `,
-      [id, userId]
-    );
+    let result;
+
+    if (req.user) {
+      // User request (frontend)
+      const userId = req.user.sub;
+
+      result = await pool.query(
+        `
+        SELECT original_filename, storage_path, expires_at, is_deleted
+        FROM files
+        WHERE id = $1 AND user_id = $2
+        `,
+        [id, userId]
+      );
+    } else {
+      // Kiosk agent request
+      result = await pool.query(
+        `
+        SELECT original_filename, storage_path, expires_at, is_deleted
+        FROM files
+        WHERE id = $1
+        `,
+        [id]
+      );
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "File not found" });
@@ -87,12 +103,12 @@ export const downloadFile = async (req, res) => {
     }
 
     res.download(file.storage_path, file.original_filename);
+
   } catch (err) {
     console.error("Download file error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 export const getExpiredFiles = async (req, res) => {
   try {

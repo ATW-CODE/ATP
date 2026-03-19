@@ -17,7 +17,7 @@ app.use(
       "http://localhost:5173",
       "http://localhost:5174",
       "http://localhost:5175",
-      "https://treatments-basement-benefits-course.trycloudflare.com",
+      "https://salmon-emotional-springer-implies.trycloudflare.com",
     ],
     credentials: true,
   })

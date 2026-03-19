@@ -154,8 +154,6 @@ export const createPrintJob = async (req, res) => {
 
     const cost = Math.round(selectedPages * copies * rate);
 
-    console.log("Incoming duplex:", duplex);
-
     const result = await pool.query(
       `
       INSERT INTO print_jobs (
