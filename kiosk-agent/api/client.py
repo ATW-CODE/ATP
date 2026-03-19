@@ -21,16 +21,22 @@ def _get_token():
   os.chmod(TOKEN_FILE, 0o600)
   return token
 
+
 HEADERS = {
   "x-Kiosk-Secret": KIOSK_SECRET,
   "X-API-KEY": PRINTER_API_KEY,
-  "Content-Type": "application/json"
+  "Content-Type": "application/json",
   }
 
 def post(path, json=None, params=None):
   """
   Send a POST request to the backend API.
   """
+  token = _get_token()
+  headers={
+    **HEADERS,
+    "Authorization": f"Bearer {token}"
+  }
   return requests.post(
     f"{API_BASE_URL}{path}",
     headers=HEADERS,
@@ -43,6 +49,11 @@ def patch(path, json=None):
   """
   Send a PATCH request to the backend API.
   """
+  token = _get_token()
+  headers={
+    **HEADERS,
+    "Authorization": f"Bearer {token}"
+  }
   return requests.patch(
     f"{API_BASE_URL}{path}",
     headers=HEADERS,
@@ -54,9 +65,15 @@ def get(path, stream=False):
   """
   Send a GET request to the backend API.
   """
+  token = _get_token()
+  headers={
+    **HEADERS,
+    "Authorization": f"Bearer {token}"
+  }
+
   return requests.get(
     f"{API_BASE_URL}{path}",
-    headers=HEADERS,
+    headers=headers,
     stream=stream,
     timeout=DOWNLOAD_TIMEOUT if stream else REQUEST_TIMEOUT
   )
